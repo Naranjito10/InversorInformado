@@ -147,7 +147,7 @@ def _fetch_js(url: str, proxy: Optional[str], timeout: int) -> str:
         page = session.fetch(url, **kwargs)
         if page is None:
             raise FetchError(f"StealthySession devolvio respuesta vacia: {url}")
-        return page.html
+        return page.html_content
     except FetchError:
         raise
     except Exception as exc:
@@ -164,7 +164,7 @@ def _fetch_http(url: str, proxy: Optional[str], timeout: int) -> str:
             page = Fetcher.get(url, **kwargs)
             if page is None:
                 raise FetchError(f"Fetcher devolvio respuesta vacia: {url}")
-            html = page.html
+            html = page.html_content
             # Detectar bloqueo suave (pagina de desafio sin error HTTP)
             if _is_blocked(html):
                 log.warning("soft_block_detected_fallback_js", extra={"url": url})

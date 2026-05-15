@@ -51,7 +51,7 @@ def _enrich_local_score(listing: Listing) -> Listing:
     return listing
 
 
-def run_target(target: dict, stats: RunStats) -> None:
+def run_target(target: dict, stats: RunStats) -> Optional[set[str]]:
     """Procesa un target (un searchUrl de una fuente concreta)."""
     source = target["source"]
     url = target["url"]
@@ -120,10 +120,8 @@ def run_target(target: dict, stats: RunStats) -> None:
             stats.errors.append({"url": listing.url, "error": str(exc)})
             stats.total_errors += 1
 
-    # Marcar como inactivos los que ya no aparecen.
-    # Solo si SCRAPER_MARK_INACTIVE=true Y el scraper cubrió todas las páginas del target.
-    if config.scraper.mark_inactive and seen_urls and result.pages_fetched > 0:
-        mark_inactive(seen_urls, source)
+    # Devolver URLs vistas para que run_cycle las acumule por fuente.
+    return seen_urls if (config.scraper.mark_inactive and result.pages_fetched > 0) else None
 
 
 def run_cycle() -> RunStats:
@@ -137,13 +135,21 @@ def run_cycle() -> RunStats:
         log.warning("no_targets_configured")
         return stats
 
+    seen_urls_by_source: dict[str, set[str]] = {}
     for target in targets:
         try:
-            run_target(target, stats)
+            seen = run_target(target, stats)
+            if seen is not None:
+                source = target["source"]
+                seen_urls_by_source.setdefault(source, set()).update(seen)
         except Exception as exc:  # noqa: BLE001
             log.error("target_unhandled_error", extra={"target": target, "error": str(exc)})
             stats.errors.append({"target": target.get("name"), "error": str(exc)})
             stats.total_errors += 1
+
+    # mark_inactive una vez por fuente con todas sus URLs vistas en el ciclo
+    for source, seen_urls in seen_urls_by_source.items():
+        mark_inactive(seen_urls, source)
 
     log.info(
         "cycle_done",

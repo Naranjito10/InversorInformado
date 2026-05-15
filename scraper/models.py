@@ -96,6 +96,6 @@ class Listing(BaseModel):
         # Quitar None (Postgres acepta omision)
         cleaned = {
             k: v for k, v in data.items()
-            if v is not None or k in {"activo", "veces_visto"}
+            if v is not None or k in {"activo", "veces_visto", "bajada_precio"}
         }
         return cleaned

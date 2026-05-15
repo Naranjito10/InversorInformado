@@ -41,7 +41,7 @@ class TestIsBlocked:
 class TestFetchHtmlHttp:
     def test_success_via_fetcher(self):
         mock_page = MagicMock()
-        mock_page.html = "<html>contenido ok</html>"
+        mock_page.html_content = "<html>contenido ok</html>"
 
         with patch("scraper.http_client._HAS_SCRAPLING", True), \
              patch("scraper.http_client.Fetcher") as mock_fetcher:
@@ -53,34 +53,26 @@ class TestFetchHtmlHttp:
 
     def test_fetcher_blocked_falls_back_to_js(self):
         mock_http_page = MagicMock()
-        mock_http_page.html = "<html>datadome</html>"
-        mock_js_page = MagicMock()
-        mock_js_page.html = "<html>contenido real</html>"
-
-        mock_session = MagicMock()
-        mock_session.fetch.return_value = mock_js_page
+        mock_http_page.html_content = "<html>datadome</html>"
 
         with patch("scraper.http_client._HAS_SCRAPLING", True), \
              patch("scraper.http_client.Fetcher") as mock_fetcher, \
-             patch("scraper.http_client._get_stealth_session", return_value=mock_session):
+             patch("scraper.http_client._fetch_js", return_value="<html>contenido real</html>") as mock_js:
             mock_fetcher.get.return_value = mock_http_page
             result = fetch_html("https://example.com", use_js=False)
 
         assert result == "<html>contenido real</html>"
+        mock_js.assert_called_once()
 
     def test_fetcher_exception_falls_back_to_js_on_403(self):
-        mock_js_page = MagicMock()
-        mock_js_page.html = "<html>ok via js</html>"
-        mock_session = MagicMock()
-        mock_session.fetch.return_value = mock_js_page
-
         with patch("scraper.http_client._HAS_SCRAPLING", True), \
              patch("scraper.http_client.Fetcher") as mock_fetcher, \
-             patch("scraper.http_client._get_stealth_session", return_value=mock_session):
+             patch("scraper.http_client._fetch_js", return_value="<html>ok via js</html>") as mock_js:
             mock_fetcher.get.side_effect = Exception("403 Forbidden")
             result = fetch_html("https://example.com", use_js=False)
 
         assert result == "<html>ok via js</html>"
+        mock_js.assert_called_once()
 
     def test_fetcher_non_block_exception_raises_fetch_error(self):
         with patch("scraper.http_client._HAS_SCRAPLING", True), \
@@ -103,7 +95,7 @@ class TestFetchHtmlHttp:
 class TestFetchHtmlJs:
     def test_success_via_stealth_session(self):
         mock_page = MagicMock()
-        mock_page.html = "<html>js rendered</html>"
+        mock_page.html_content = "<html>js rendered</html>"
         mock_session = MagicMock()
         mock_session.fetch.return_value = mock_page
 
