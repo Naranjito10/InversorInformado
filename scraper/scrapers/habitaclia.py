@@ -18,10 +18,10 @@ class HabitacliaScraper(BaseScraper):
 
     def parse_search_page(self, html: str, base_url: str) -> Iterator[dict]:
         soup = BeautifulSoup(html, "lxml")
-        cards = soup.select(
-            "article.list-item-container, article[class*='list-item'], "
-            "li.list-item"
-        )
+        # Priorizar articles para evitar duplicados cuando li contiene article
+        cards = soup.select("article.list-item-container, article[class*='list-item']")
+        if not cards:
+            cards = soup.select("li.list-item")
         for card in cards:
             try:
                 item: dict = {}

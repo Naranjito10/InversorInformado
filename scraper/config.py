@@ -51,6 +51,7 @@ class ScraperConfig:
     user_agent_rotate: bool = True
     proxies: List[str] = field(default_factory=list)
     search_targets_file: str = "config/search_targets.json"
+    mark_inactive: bool = False  # desactivar anuncios no vistos (solo si max_pages cubre el total)
 
 
 @dataclass
@@ -122,6 +123,7 @@ class AppConfig:
                 search_targets_file=os.getenv(
                     "SEARCH_TARGETS_FILE", "config/search_targets.json"
                 ),
+                mark_inactive=_get_bool("SCRAPER_MARK_INACTIVE", False),
             ),
             supabase=SupabaseConfig(
                 url=os.getenv("SUPABASE_URL", ""),
@@ -149,6 +151,41 @@ class AppConfig:
                 file=os.getenv("LOG_FILE", "logs/scraper.jsonl"),
             ),
         )
+
+    def validate(self) -> None:
+        """Registra advertencias de configuracion al arranque. Llama desde run_cycle()."""
+        from .logger import get_logger
+        log = get_logger("config")
+
+        if not self.supabase.enabled:
+            log.warning(
+                "supabase_not_configured",
+                extra={"detail": "Datos no persistidos. Configura SUPABASE_URL y SUPABASE_KEY."},
+            )
+        if not self.email.enabled and not self.telegram.enabled:
+            log.warning(
+                "no_alert_channels",
+                extra={"detail": "Sin canales de alerta. Configura SMTP o Telegram."},
+            )
+        if self.scraper.delay_min >= self.scraper.delay_max:
+            log.warning(
+                "delay_config_invalid",
+                extra={
+                    "delay_min": self.scraper.delay_min,
+                    "delay_max": self.scraper.delay_max,
+                    "detail": "delay_min debe ser < delay_max. Revertiendo a 2-5s.",
+                },
+            )
+            self.scraper.delay_min = 2.0
+            self.scraper.delay_max = 5.0
+        if self.scraper.max_pages_per_search > 10:
+            log.warning(
+                "max_pages_too_high",
+                extra={
+                    "max_pages": self.scraper.max_pages_per_search,
+                    "detail": "Demasiadas paginas por busqueda. Riesgo de ban. Recomendado: <= 5.",
+                },
+            )
 
     def load_search_targets(self) -> List[dict]:
         path = Path(self.scraper.search_targets_file)

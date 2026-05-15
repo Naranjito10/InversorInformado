@@ -120,17 +120,15 @@ def run_target(target: dict, stats: RunStats) -> None:
             stats.errors.append({"url": listing.url, "error": str(exc)})
             stats.total_errors += 1
 
-    # Marcar como inactivos los que ya no aparecen (solo si vimos algo coherente)
-    if seen_urls and result.pages_fetched > 0:
-        # Atencion: solo desactivar si la URL del target corresponde a una zona
-        # cuyos anuncios cubrimos *completos*. Como no siempre es asi, esta
-        # funcionalidad la dejamos opcional comentada para evitar falsos negativos.
-        # mark_inactive(seen_urls, source)
-        pass
+    # Marcar como inactivos los que ya no aparecen.
+    # Solo si SCRAPER_MARK_INACTIVE=true Y el scraper cubrió todas las páginas del target.
+    if config.scraper.mark_inactive and seen_urls and result.pages_fetched > 0:
+        mark_inactive(seen_urls, source)
 
 
 def run_cycle() -> RunStats:
     """Ejecuta un ciclo completo: itera por todos los targets configurados."""
+    config.validate()
     log.info("cycle_start")
     targets = config.load_search_targets()
     stats = RunStats(total_targets=len(targets))
