@@ -1,0 +1,17 @@
+.env
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.vscode/
+.idea/
+logs/*.jsonl
+logs/*.log
+*.xlsx
+!export/example.xlsx
+.DS_Store
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.claude/

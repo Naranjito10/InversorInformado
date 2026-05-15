@@ -1,0 +1,34 @@
+{
+  "targets": [
+    {
+      "source": "idealista",
+      "name": "Barcelona - Eixample - Compra",
+      "url": "https://www.idealista.com/venta-viviendas/barcelona/eixample/",
+      "max_pages": 3
+    },
+    {
+      "source": "idealista",
+      "name": "Cardedeu - Compra",
+      "url": "https://www.idealista.com/venta-viviendas/cardedeu-barcelona/",
+      "max_pages": 2
+    },
+    {
+      "source": "fotocasa",
+      "name": "Barcelona - Eixample - Compra",
+      "url": "https://www.fotocasa.es/es/comprar/viviendas/barcelona-capital/eixample/l",
+      "max_pages": 3
+    },
+    {
+      "source": "habitaclia",
+      "name": "Barcelona - Eixample - Compra",
+      "url": "https://www.habitaclia.com/comprar-vivienda-en-eixample-barcelona.htm",
+      "max_pages": 3
+    },
+    {
+      "source": "casaradar",
+      "name": "Barcelona - Compra",
+      "url": "https://www.casaradar.es/comprar/barcelona",
+      "max_pages": 3
+    }
+  ]
+}
