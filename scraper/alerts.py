@@ -186,7 +186,6 @@ def notify_opportunity(listing: dict) -> None:
     send_email(subject, text, html)
     send_telegram(text)
 
-
 def should_alert(listing: dict, was_new: bool = False) -> bool:
     """Decide si una vivienda merece alerta segun los thresholds configurados."""
     score = listing.get("score") or 0
