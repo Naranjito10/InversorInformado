@@ -18,50 +18,68 @@ class HabitacliaScraper(BaseScraper):
 
     def parse_search_page(self, html: str, base_url: str) -> Iterator[dict]:
         soup = BeautifulSoup(html, "lxml")
-        # Priorizar articles para evitar duplicados cuando li contiene article
-        cards = soup.select("article.list-item-container, article[class*='list-item']")
-        if not cards:
-            cards = soup.select("li.list-item")
+
+        # Cada listing es un <article class="list-item-container ...">
+        cards = soup.select("article.list-item-container")
         for card in cards:
             try:
                 item: dict = {}
-                link = card.select_one("a[href*='/vivienda-en-'], a[href*='/inmueble']") \
-                    or card.select_one("a.list-item-title, h3 a, h2 a")
-                if not link:
+
+                # URL: viene en data-href del article (sin params de tracking)
+                # o en el link del título si data-href no está
+                url = card.get("data-href", "")
+                if not url:
+                    title_link = card.select_one("h3.list-item-title a")
+                    url = title_link["href"] if title_link and title_link.get("href") else ""
+                if not url:
                     continue
-                item["url"] = urljoin(self.BASE, link.get("href", ""))
-                item["titulo"] = link.get_text(strip=True) or link.get("title")
+                # Limpiar params de tracking
+                url = url.split("?")[0]
+                item["url"] = url
 
-                # Precio
-                price = card.select_one(".list-item-price, [class*='price']")
-                if price:
-                    item["precio_venta"] = price.get_text(strip=True)
+                # Título
+                title_a = card.select_one("h3.list-item-title a")
+                item["titulo"] = title_a.get_text(strip=True) if title_a else ""
 
-                # Features
-                features = card.select(".list-item-feature, [class*='feature'] li, ul.list-feature li")
-                for f in features:
-                    txt = f.get_text(" ", strip=True).lower()
-                    if "m²" in txt or "m2" in txt:
-                        item["metros_cuadrados"] = txt
-                    elif "hab" in txt or "dorm" in txt:
-                        item["habitaciones"] = txt
-                    elif "baño" in txt or "bano" in txt:
-                        item["banos"] = txt
-                    elif "planta" in txt:
-                        item["planta"] = txt
+                # Precio: <span itemprop="price">750.000 €</span>
+                price_el = card.select_one("span[itemprop='price']")
+                if price_el:
+                    item["precio_venta"] = price_el.get_text(strip=True)
 
-                # Localizacion
-                loc = card.select_one(".list-item-location, [class*='location']")
-                if loc:
-                    parts = [p.strip() for p in loc.get_text(",", strip=True).split(",") if p.strip()]
+                # Localización: "Barcelona - Sant Antoni"
+                loc_el = card.select_one("p.list-item-location span, p.list-item-location")
+                if loc_el:
+                    parts = [p.strip() for p in loc_el.get_text(",", strip=True).split("-") if p.strip()]
                     if parts:
-                        item["barrio"] = parts[0]
+                        item["barrio"] = parts[-1].strip()
                     if len(parts) > 1:
-                        item["municipio"] = parts[-1]
+                        item["municipio"] = parts[0].strip()
 
-                desc = card.select_one(".list-item-description, p")
-                if desc:
-                    item["description"] = desc.get_text(" ", strip=True)
+                # Features: "116m² - 2 habitaciones - 2 baños - 6.466€/m²"
+                feat_el = card.select_one("p.list-item-feature")
+                if feat_el:
+                    txt = feat_el.get_text(" ", strip=True).lower()
+                    m2 = re.search(r"(\d[\d.,]+)\s*m", txt)
+                    if m2:
+                        item["metros_cuadrados"] = m2.group(1).replace(".", "").replace(",", ".")
+                    hab = re.search(r"(\d+)\s*habitaci", txt)
+                    if hab:
+                        item["habitaciones"] = int(hab.group(1))
+                    ban = re.search(r"(\d+)\s*ba[ñn]", txt)
+                    if ban:
+                        item["banos"] = int(ban.group(1))
+                    planta_m = re.search(
+                        r"(\d+)[ºªº°]?\s*planta|planta\s*(\d+)"
+                        r"|\b(planta baja|bajo|entresuelo|[aá]tico|semis[oó]tano|s[oó]tano)\b",
+                        txt,
+                    )
+                    if planta_m:
+                        item["planta"] = planta_m.group(1) or planta_m.group(2) or planta_m.group(3)
+
+                # Descripción
+                desc_el = card.select_one("p.list-item-description")
+                if desc_el:
+                    item["description"] = desc_el.get_text(" ", strip=True)
 
                 yield item
             except Exception as exc:  # noqa: BLE001
@@ -69,14 +87,14 @@ class HabitacliaScraper(BaseScraper):
 
     def next_page_url(self, html: str, current_url: str, page_num: int) -> Optional[str]:
         soup = BeautifulSoup(html, "lxml")
-        nxt = soup.select_one("a.next, a[rel='next'], a.pagination-next")
+        nxt = soup.select_one("a.next, a[rel='next'], a.pagination-next, a[aria-label='Siguiente']")
         if nxt and nxt.get("href"):
             return urljoin(self.BASE, nxt["href"])
-        # Patron habitaclia: -N.htm
+        # Patrón: viviendas-distrito_eixample-barcelona.htm → -2.htm → -3.htm
         m = re.search(r"-(\d+)\.htm$", current_url)
         if m:
-            next_page = int(m.group(1)) + 1
-            return re.sub(r"-\d+\.htm$", f"-{next_page}.htm", current_url)
+            next_num = int(m.group(1)) + 1
+            return re.sub(r"-\d+\.htm$", f"-{next_num}.htm", current_url)
         if current_url.endswith(".htm") and page_num == 1:
             return current_url.replace(".htm", "-2.htm")
         return None

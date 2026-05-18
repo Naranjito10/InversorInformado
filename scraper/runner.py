@@ -26,6 +26,19 @@ class RunStats:
     errors: list[dict] = field(default_factory=list)
 
 
+def _price_in_range(
+    listing: Listing, price_min: Optional[int], price_max: Optional[int]
+) -> bool:
+    """Listings sin precio conocido se conservan; resto se filtran por rango."""
+    if listing.precio_venta is None:
+        return True
+    if price_min is not None and listing.precio_venta < price_min:
+        return False
+    if price_max is not None and listing.precio_venta > price_max:
+        return False
+    return True
+
+
 def _enrich_local_score(listing: Listing) -> Listing:
     """Aplica scoring en Python (espejo del SQL) por si la BD no es Supabase."""
     listing.campos_vacios = contar_campos_vacios(listing)
@@ -56,8 +69,10 @@ def run_target(target: dict, stats: RunStats) -> Optional[set[str]]:
     source = target["source"]
     url = target["url"]
     max_pages = target.get("max_pages", config.scraper.max_pages_per_search)
+    max_results = target.get("max_results", 100)
 
-    log.info("target_start", extra={"source": source, "url": url, "max_pages": max_pages})
+    log.info("target_start", extra={"source": source, "url": url,
+                                    "max_pages": max_pages, "max_results": max_results})
 
     try:
         scraper = get_scraper(source)
@@ -68,7 +83,7 @@ def run_target(target: dict, stats: RunStats) -> Optional[set[str]]:
         return
 
     try:
-        result = scraper.scrape_search(url, max_pages=max_pages)
+        result = scraper.scrape_search(url, max_pages=max_pages, max_results=max_results)
     except Exception as exc:  # noqa: BLE001
         log.error(
             "scrape_failed",
@@ -78,6 +93,18 @@ def run_target(target: dict, stats: RunStats) -> Optional[set[str]]:
         stats.errors.append({"source": source, "url": url, "error": str(exc)})
         stats.total_errors += 1
         return
+
+    # Aplicar filtro de precio (post-scraping universal: funciona en todos los portales)
+    filters = target.get("filters", {})
+    price_min: Optional[int] = filters.get("price_min")
+    price_max: Optional[int] = filters.get("price_max")
+    if price_min is not None or price_max is not None:
+        before = len(result.listings)
+        result.listings = [l for l in result.listings if _price_in_range(l, price_min, price_max)]
+        removed = before - len(result.listings)
+        if removed:
+            log.info("price_filter", extra={"removed": removed, "kept": len(result.listings),
+                                            "min": price_min, "max": price_max})
 
     stats.total_scraped += result.count
     stats.total_errors += len(result.errors)
@@ -124,6 +151,46 @@ def run_target(target: dict, stats: RunStats) -> Optional[set[str]]:
     return seen_urls if (config.scraper.mark_inactive and result.pages_fetched > 0) else None
 
 
+def run_targets(targets: list[dict]) -> RunStats:
+    """Ejecuta un ciclo con los targets proporcionados (e.g. desde webhook)."""
+    stats = RunStats(total_targets=len(targets))
+    if not targets:
+        log.warning("no_targets_provided")
+        return stats
+
+    disabled = {s.lower() for s in (config.scraper.disabled_sources or [])}
+    seen_urls_by_source: dict[str, set[str]] = {}
+    for target in targets:
+        if target.get("source", "").lower() in disabled:
+            log.info("target_skipped_disabled", extra={"source": target.get("source")})
+            continue
+        try:
+            seen = run_target(target, stats)
+            if seen is not None:
+                source = target["source"]
+                seen_urls_by_source.setdefault(source, set()).update(seen)
+        except Exception as exc:  # noqa: BLE001
+            log.error("target_unhandled_error", extra={"target": target, "error": str(exc)})
+            stats.errors.append({"target": target.get("name"), "error": str(exc)})
+            stats.total_errors += 1
+
+    for source, seen_urls in seen_urls_by_source.items():
+        mark_inactive(seen_urls, source)
+
+    log.info(
+        "cycle_done",
+        extra={
+            "targets": stats.total_targets,
+            "scraped": stats.total_scraped,
+            "new": stats.total_new,
+            "updated": stats.total_updated,
+            "alerts": stats.total_alerts,
+            "errors": stats.total_errors,
+        },
+    )
+    return stats
+
+
 def run_cycle() -> RunStats:
     """Ejecuta un ciclo completo: itera por todos los targets configurados."""
     config.validate()
@@ -135,8 +202,12 @@ def run_cycle() -> RunStats:
         log.warning("no_targets_configured")
         return stats
 
+    disabled = {s.lower() for s in (config.scraper.disabled_sources or [])}
     seen_urls_by_source: dict[str, set[str]] = {}
     for target in targets:
+        if target.get("source", "").lower() in disabled:
+            log.info("target_skipped_disabled", extra={"source": target.get("source")})
+            continue
         try:
             seen = run_target(target, stats)
             if seen is not None:

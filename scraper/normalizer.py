@@ -132,6 +132,37 @@ def detect_cee(text: str) -> Optional[str]:
     return None
 
 
+_PLANTA_MAP = {
+    "0": "Bajo", "bajo": "Bajo", "planta baja": "Bajo", "pb": "Bajo",
+    "entresuulo": "Entresuelo", "entresuelo": "Entresuelo",
+    "atico": "\u00c1tico", "\u00e1tico": "\u00c1tico",
+    "semisotano": "Semis\u00f3tano", "semis\u00f3tano": "Semis\u00f3tano",
+    "sotano": "S\u00f3tano", "s\u00f3tano": "S\u00f3tano",
+}
+
+
+def normalize_planta(v: Any) -> Optional[str]:
+    """Normaliza la planta: 0/'bajo'\u2192'Bajo', 1\u2192'1\u00aa', '\u00e1tico'\u2192'\u00c1tico', etc."""
+    if v is None:
+        return None
+    s = str(v).strip().lower()
+    if not s or s == "none":
+        return None
+    if s in _PLANTA_MAP:
+        return _PLANTA_MAP[s]
+    # "3\u00aa planta", "planta 3", "3 planta"
+    m = re.search(r"(\d+)[\u00ba\u00aa\u00ba\u00b0]?\s*planta|planta\s*(\d+)", s)
+    if m:
+        n = int(m.group(1) or m.group(2))
+        return "Bajo" if n == 0 else f"{n}\u00aa"
+    # Numero suelto o con sufijo: "1", "1\u00aa", "2\u00ba"
+    m = re.match(r"^(\d+)[\u00ba\u00aa\u00ba\u00b0]?$", s)
+    if m:
+        n = int(m.group(1))
+        return "Bajo" if n == 0 else f"{n}\u00aa"
+    return clean_str(str(v))
+
+
 # ---------------------------------------------------------------------------
 # Normalizador principal
 # ---------------------------------------------------------------------------
@@ -174,7 +205,7 @@ def normalize(source: str, raw: dict[str, Any]) -> Listing:
         metros_cuadrados=m2,
         habitaciones=clean_int(raw.get("habitaciones") or raw.get("rooms")),
         banos=clean_int(raw.get("banos") or raw.get("bathrooms")),
-        planta=clean_str(raw.get("planta") or raw.get("floor")),
+        planta=normalize_planta(raw.get("planta") if raw.get("planta") is not None else raw.get("floor")),
         ascensor=raw.get("ascensor") if isinstance(raw.get("ascensor"), bool) else feats["ascensor"],
         terraza=raw.get("terraza") if isinstance(raw.get("terraza"), bool) else feats["terraza"],
         garaje=raw.get("garaje") if isinstance(raw.get("garaje"), bool) else feats["garaje"],

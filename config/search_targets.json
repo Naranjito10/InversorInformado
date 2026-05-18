@@ -3,32 +3,57 @@
     {
       "source": "idealista",
       "name": "Barcelona - Eixample - Compra",
-      "url": "https://www.idealista.com/venta-viviendas/barcelona/eixample/",
-      "max_pages": 3
+      "url": "https://www.idealista.com/venta-viviendas/barcelona/eixample/con-precio-hasta_200000,precio-desde_150000/?ordenado-por=fecha-publicacion-desc",
+      "max_pages": 3,
+      "max_results": 100,
+      "filters": {
+        "price_min": 150000,
+        "price_max": 200000
+      }
     },
     {
       "source": "idealista",
       "name": "Cardedeu - Compra",
-      "url": "https://www.idealista.com/venta-viviendas/cardedeu-barcelona/",
-      "max_pages": 2
+      "url": "https://www.idealista.com/venta-viviendas/cardedeu-barcelona/con-precio-hasta_200000,precio-desde_150000/?ordenado-por=fecha-publicacion-desc",
+      "max_pages": 2,
+      "max_results": 100,
+      "filters": {
+        "price_min": 150000,
+        "price_max": 200000
+      }
     },
     {
       "source": "fotocasa",
       "name": "Barcelona - Eixample - Compra",
-      "url": "https://www.fotocasa.es/es/comprar/viviendas/barcelona-capital/eixample/l",
-      "max_pages": 3
+      "url": "https://www.fotocasa.es/es/comprar/viviendas/barcelona-capital/eixample/l?priceMin=150000&priceMax=200000&sortType=publishingDate&sortOrderDesc=true",
+      "max_pages": 3,
+      "max_results": 100,
+      "filters": {
+        "price_min": 150000,
+        "price_max": 200000
+      }
     },
     {
       "source": "habitaclia",
       "name": "Barcelona - Eixample - Compra",
-      "url": "https://www.habitaclia.com/comprar-vivienda-en-eixample-barcelona.htm",
-      "max_pages": 3
+      "url": "https://www.habitaclia.com/viviendas-distrito_eixample-barcelona.htm",
+      "max_pages": 3,
+      "max_results": 100,
+      "filters": {
+        "price_min": 150000,
+        "price_max": 200000
+      }
     },
     {
-      "source": "casaradar",
-      "name": "Barcelona - Compra",
-      "url": "https://www.casaradar.es/comprar/barcelona",
-      "max_pages": 3
+      "source": "pisos",
+      "name": "Barcelona - Eixample - Compra",
+      "url": "https://www.pisos.com/venta/pisos-eixample-barcelona/fecharecientedesde-desc/",
+      "max_pages": 3,
+      "max_results": 100,
+      "filters": {
+        "price_min": 150000,
+        "price_max": 200000
+      }
     }
   ]
 }

@@ -212,14 +212,21 @@ def _fetch_httpx(url: str, proxy: Optional[str], timeout: int) -> str:
 
 
 def _is_blocked(html: str) -> bool:
-    """Detecta paginas de desafio sin error HTTP (DataDome, Cloudflare, etc.)."""
+    """Detecta paginas de desafio sin error HTTP (DataDome, Cloudflare, Imperva, etc.)."""
     lower = html.lower()
     return (
         "datadome" in lower
+        or "check.datadome.co" in lower
         or ("challenge" in lower and len(html) < 10_000)
         or "captcha" in lower
+        or "ddg-captcha" in lower          # DataDome challenge page class
+        or "validate your request" in lower  # DataDome message
         or "acceso restringido" in lower
         or "verificar que no eres un robot" in lower
+        or "pardon our interruption" in lower  # Imperva/Incapsula
+        or ("sorry, you have been blocked" in lower and len(html) < 15_000)
+        or ("access denied" in lower and len(html) < 10_000)
+        or "robot_check" in lower
     )
 
 

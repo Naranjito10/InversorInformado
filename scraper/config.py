@@ -52,6 +52,7 @@ class ScraperConfig:
     proxies: List[str] = field(default_factory=list)
     search_targets_file: str = "config/search_targets.json"
     mark_inactive: bool = False  # desactivar anuncios no vistos (solo si max_pages cubre el total)
+    disabled_sources: List[str] = field(default_factory=list)  # ej. ["casaradar","idealista"]
 
 
 @dataclass
@@ -124,6 +125,9 @@ class AppConfig:
                     "SEARCH_TARGETS_FILE", "config/search_targets.json"
                 ),
                 mark_inactive=_get_bool("SCRAPER_MARK_INACTIVE", False),
+                disabled_sources=[
+                    s.lower() for s in _get_list("SCRAPER_DISABLED_SOURCES")
+                ],
             ),
             supabase=SupabaseConfig(
                 url=os.getenv("SUPABASE_URL", ""),

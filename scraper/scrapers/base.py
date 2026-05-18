@@ -41,12 +41,12 @@ class BaseScraper(ABC):
     def scrape_search(
         self,
         search_url: str,
-        max_pages: int = 5,
+        max_pages: int = 3,
+        max_results: int = 100,
     ) -> ScraperResult:
         """
-        Recorre todas las paginas de un listado de busqueda y devuelve los anuncios.
-
-        Cada error individual se captura sin detener el proceso global.
+        Recorre paginas de busqueda hasta alcanzar max_pages O max_results,
+        lo que ocurra primero.
         """
         from ..http_client import fetch_with_delay
         from ..normalizer import normalize
@@ -55,7 +55,7 @@ class BaseScraper(ABC):
         url = search_url
         page = 1
 
-        while url and page <= max_pages:
+        while url and page <= max_pages and len(result.listings) < max_results:
             self.log.info("page_fetch_start", extra={"url": url, "page": page})
             html = fetch_with_delay(url, use_js=self.USE_JS)
             if not html:
@@ -75,6 +75,8 @@ class BaseScraper(ABC):
             )
 
             for raw in raw_items:
+                if len(result.listings) >= max_results:
+                    break
                 try:
                     if not raw.get("url"):
                         continue

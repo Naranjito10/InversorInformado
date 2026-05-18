@@ -27,6 +27,16 @@ class IdealistaScraper(BaseScraper):
     def parse_search_page(self, html: str, base_url: str) -> Iterator[dict]:
         soup = BeautifulSoup(html, "lxml")
 
+        # Localización de página: extraída una vez y compartida como fallback
+        page_municipio: Optional[str] = None
+        page_barrio: Optional[str] = None
+        bc = soup.select(".breadcrumb-geo li, nav.breadcrumb li")
+        if len(bc) >= 2:
+            page_municipio = bc[-2].get_text(strip=True)
+            page_barrio = bc[-1].get_text(strip=True)
+        elif len(bc) == 1:
+            page_municipio = bc[0].get_text(strip=True)
+
         # Idealista usa <article class="item ..." data-element-id="...">
         articles = soup.select("article.item, article[data-element-id]")
 
@@ -55,37 +65,25 @@ class IdealistaScraper(BaseScraper):
                         item["metros_cuadrados"] = txt
                     elif "hab" in txt:
                         item["habitaciones"] = txt
-                    elif "planta" in txt or "bajo" in txt or "entrep" in txt:
-                        item["planta"] = txt
+                    elif "planta" in txt or "bajo" in txt or "entrep" in txt or "ático" in txt:
+                        item["planta"] = d.get_text(strip=True)
                     elif "ascensor" in txt:
                         item["ascensor"] = "sin ascensor" not in txt
 
-                # Descripcion / features extra
+                # Descripcion
                 desc_el = art.select_one(".item-description")
                 if desc_el:
                     item["description"] = desc_el.get_text(" ", strip=True)
 
-                # Localizacion (la zona suele estar en el title o en h1 padre)
-                # Idealista no la da inline en cada item; se extrae del breadcrumb
-                # de la pagina de busqueda. Lo guardamos a partir del slug de la URL.
-                slug_match = re.search(r"/inmueble/\d+/", item["url"])
-                if slug_match:
-                    # En la pagina de detalle vendran barrio/municipio reales.
-                    pass
-
-                # Etiqueta de zona en la pagina (h1)
-                h1 = soup.select_one("h1")
-                if h1:
-                    item.setdefault("description", "")
-                    item["description"] = f"{h1.get_text(' ', strip=True)} | {item['description']}"
-
-                # Intentamos extraer municipio/barrio de breadcrumb
-                bc = soup.select(".breadcrumb-geo li, nav.breadcrumb li")
-                if bc and len(bc) >= 2:
-                    item["municipio"] = bc[-1].get_text(strip=True) if bc else None
-                    if len(bc) >= 3:
-                        item["barrio"] = bc[-1].get_text(strip=True)
-                        item["municipio"] = bc[-2].get_text(strip=True)
+                # Localización por artículo (si existe), si no, fallback de página
+                loc_el = art.select_one(".item-location, [class*='location']")
+                if loc_el:
+                    parts = [p.strip() for p in loc_el.get_text(",", strip=True).split(",") if p.strip()]
+                    item["municipio"] = parts[0] if parts else page_municipio
+                    item["barrio"] = parts[-1] if len(parts) >= 2 else page_barrio
+                else:
+                    item["municipio"] = page_municipio
+                    item["barrio"] = page_barrio
 
                 yield item
             except Exception as exc:  # noqa: BLE001

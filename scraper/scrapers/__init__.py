@@ -1,28 +1,31 @@
 """Scrapers individuales por portal inmobiliario."""
 
 from .base import BaseScraper, ScraperResult
-from .idealista import IdealistaScraper
+from .casaradar import CasaradarScraper
 from .fotocasa import FotocasaScraper
 from .habitaclia import HabitacliaScraper
-from .casaradar import CasaradarScraper
+from .idealista import IdealistaScraper
+from .pisos import PisosScraper
 
 __all__ = [
     "BaseScraper",
     "ScraperResult",
-    "IdealistaScraper",
+    "CasaradarScraper",
     "FotocasaScraper",
     "HabitacliaScraper",
-    "CasaradarScraper",
+    "IdealistaScraper",
+    "PisosScraper",
 ]
 
 
 def get_scraper(source: str) -> BaseScraper:
     """Factory: devuelve la instancia de scraper para una fuente."""
     mapping = {
-        "idealista": IdealistaScraper,
+        "casaradar": CasaradarScraper,
         "fotocasa": FotocasaScraper,
         "habitaclia": HabitacliaScraper,
-        "casaradar": CasaradarScraper,
+        "idealista": IdealistaScraper,
+        "pisos": PisosScraper,
     }
     cls = mapping.get(source.lower())
     if cls is None:
