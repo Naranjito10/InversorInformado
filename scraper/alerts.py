@@ -128,7 +128,6 @@ def send_email(subject: str, body_text: str, body_html: Optional[str] = None) ->
         log.error("email_failed", extra={"error": str(exc)})
         return False
 
-
 # ---------------------------------------------------------------------------
 # Telegram
 # ---------------------------------------------------------------------------
