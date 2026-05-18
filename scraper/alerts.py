@@ -42,7 +42,6 @@ def format_alert_message(listing: dict) -> str:
         f"🔗 {url}"
     )
 
-
 def format_alert_html(listing: dict) -> str:
     """Version HTML para email."""
     score = listing.get("score") or 0
