@@ -162,7 +162,6 @@ def send_telegram(text: str) -> bool:
         log.error("telegram_failed", extra={"error": str(exc)})
         return False
 
-
 # ---------------------------------------------------------------------------
 # Orquestador
 # ---------------------------------------------------------------------------
@@ -185,7 +184,6 @@ def notify_opportunity(listing: dict) -> None:
 
     send_email(subject, text, html)
     send_telegram(text)
-
 
 def should_alert(listing: dict, was_new: bool = False) -> bool:
     """Decide si una vivienda merece alerta segun los thresholds configurados."""
