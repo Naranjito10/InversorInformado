@@ -162,7 +162,6 @@ def send_telegram(text: str) -> bool:
         log.error("telegram_failed", extra={"error": str(exc)})
         return False
 
-
 # ---------------------------------------------------------------------------
 # Orquestador
 # ---------------------------------------------------------------------------
