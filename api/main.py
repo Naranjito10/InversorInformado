@@ -10,7 +10,7 @@ if str(ROOT) not in sys.path:
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.routers import listings, scraper, export, zones, monitor
+from api.routers import listings, scraper, export, zones, monitor, telegram
 
 app = FastAPI(title="InversorInformado API", version="1.0.0")
 
@@ -27,6 +27,7 @@ app.include_router(scraper.router)
 app.include_router(export.router)
 app.include_router(zones.router)
 app.include_router(monitor.router)
+app.include_router(telegram.router)
 
 
 @app.get("/health")

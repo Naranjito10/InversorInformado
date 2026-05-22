@@ -7,6 +7,7 @@ export interface Listing {
   metros_cuadrados?: number;
   habitaciones?: number;
   banos?: number;
+  planta?: string;
   barrio?: string;
   municipio?: string;
   estado?: string;
