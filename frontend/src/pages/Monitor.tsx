@@ -3,14 +3,13 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { testPortal, fetchLogs } from "../services/api";
 import type { PortalTestResult, LogEntry } from "../services/api";
 
-const PORTALES = ["habitaclia", "pisos", "idealista", "fotocasa", "casaradar"];
+const PORTALES = ["habitaclia", "pisos", "idealista", "fotocasa"];
 
 const PORTAL_LABEL: Record<string, string> = {
   habitaclia: "Habitaclia",
   pisos: "Pisos.com",
   idealista: "Idealista",
   fotocasa: "Fotocasa",
-  casaradar: "Casaradar",
 };
 
 const STATUS_STYLE: Record<string, string> = {
@@ -169,7 +168,7 @@ export default function Monitor() {
             <select
               value={logLines}
               onChange={(e) => setLogLines(Number(e.target.value))}
-              className="text-xs border border-gray-300 rounded-lg px-2 py-1.5 text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="capitalize text-xs border border-gray-300 rounded-lg px-2 py-1.5 text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               {[50, 100, 200, 500].map((n) => (
                 <option key={n} value={n}>Últimas {n}</option>

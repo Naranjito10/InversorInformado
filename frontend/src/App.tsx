@@ -4,6 +4,7 @@ import Dashboard from "./pages/Dashboard";
 import SearchForm from "./pages/SearchForm";
 import Monitor from "./pages/Monitor";
 import Review from "./pages/Review";
+import Carga from "./pages/Carga";
 import { fetchPendingReview } from "./services/api";
 
 function PendingBadge() {
@@ -45,6 +46,14 @@ export default function App() {
           Buscar
         </NavLink>
         <NavLink
+          to="/carga"
+          className={({ isActive }) =>
+            isActive ? "text-blue-600 font-medium" : "text-gray-500 hover:text-gray-800"
+          }
+        >
+          Carga
+        </NavLink>
+        <NavLink
           to="/revision"
           className={({ isActive }) =>
             `flex items-center ${isActive ? "text-blue-600 font-medium" : "text-gray-500 hover:text-gray-800"}`
@@ -68,6 +77,7 @@ export default function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/buscar" element={<SearchForm />} />
           <Route path="/monitor" element={<Monitor />} />
+          <Route path="/carga" element={<Carga />} />
           <Route path="/revision" element={<Review />} />
         </Routes>
       </main>

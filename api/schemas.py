@@ -61,3 +61,38 @@ class ZoneOut(BaseModel):
     key: str
     label: str
     portales_disponibles: list[str]
+
+
+class ManualListingIn(BaseModel):
+    url: str
+    fuente: str
+    titulo: Optional[str] = None
+    precio_venta: Optional[int] = None
+    metros_cuadrados: Optional[int] = None
+    habitaciones: Optional[int] = None
+    banos: Optional[int] = None
+    municipio: Optional[str] = None
+    barrio: Optional[str] = None
+    provincia: Optional[str] = None
+    estado: Optional[str] = None
+    ascensor: Optional[bool] = None
+    terraza: Optional[bool] = None
+    garaje: Optional[bool] = None
+    certificado_energetico: Optional[str] = None
+    alquiler_estimado: Optional[int] = None
+    precio_zona_m2: Optional[int] = None
+
+
+class CheckUrlsRequest(BaseModel):
+    urls: list[str]
+
+
+class BulkImportRequest(BaseModel):
+    listings: list[ManualListingIn]
+
+
+class BulkImportResult(BaseModel):
+    inserted: int
+    updated: int
+    errors: int
+    error_details: list[dict]

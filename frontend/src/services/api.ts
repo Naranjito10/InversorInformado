@@ -100,6 +100,54 @@ export const rejectListing = async (id: string): Promise<void> => {
   await api.post(`/listings/${id}/reject`);
 };
 
+export interface ManualListingIn {
+  url: string;
+  fuente: string;
+  titulo?: string;
+  precio_venta?: number;
+  metros_cuadrados?: number;
+  habitaciones?: number;
+  banos?: number;
+  municipio?: string;
+  barrio?: string;
+  provincia?: string;
+  estado?: string;
+  ascensor?: boolean;
+  terraza?: boolean;
+  garaje?: boolean;
+  certificado_energetico?: string;
+  alquiler_estimado?: number;
+  precio_zona_m2?: number;
+}
+
+export interface BulkImportResult {
+  inserted: number;
+  updated: number;
+  errors: number;
+  error_details: { url: string; error: string }[];
+}
+
+export const createManualListing = async (
+  data: ManualListingIn
+): Promise<{ status: string; ok: boolean }> => {
+  const { data: result } = await api.post("/listings/manual", data);
+  return result;
+};
+
+export const checkUrls = async (
+  urls: string[]
+): Promise<Record<string, boolean>> => {
+  const { data } = await api.post<Record<string, boolean>>("/listings/check-urls", { urls });
+  return data;
+};
+
+export const bulkImport = async (
+  listings: ManualListingIn[]
+): Promise<BulkImportResult> => {
+  const { data } = await api.post<BulkImportResult>("/listings/bulk", { listings });
+  return data;
+};
+
 export const exportExcel = (filters: ListingFilters = {}): void => {
   const params = new URLSearchParams();
   Object.entries(filters).forEach(([k, v]) => {

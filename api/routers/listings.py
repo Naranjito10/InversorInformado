@@ -1,7 +1,10 @@
 from __future__ import annotations
 from typing import Optional
 from fastapi import APIRouter, Query
-from api.schemas import ListingOut, StatsOut
+from api.schemas import (
+    BulkImportRequest, BulkImportResult, CheckUrlsRequest,
+    ListingOut, ManualListingIn, StatsOut,
+)
 from api.services import listings_service
 
 router = APIRouter(prefix="/api/listings", tags=["listings"])
@@ -36,6 +39,23 @@ def get_listings(
         filters["precio_max"] = precio_max
 
     return listings_service.get_listings(filters=filters, limit=limit)
+
+
+@router.post("/manual")
+def create_manual(body: ManualListingIn):
+    return listings_service.create_manual_listing(body.model_dump(exclude_none=True))
+
+
+@router.post("/check-urls")
+def check_urls(body: CheckUrlsRequest):
+    return listings_service.check_urls_exist(body.urls)
+
+
+@router.post("/bulk", response_model=BulkImportResult)
+def bulk_import(body: BulkImportRequest):
+    return listings_service.bulk_import_listings(
+        [item.model_dump(exclude_none=True) for item in body.listings]
+    )
 
 
 @router.get("/pending-review")
