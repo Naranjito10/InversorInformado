@@ -4,12 +4,12 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Optional
 
-from .alerts import notify_opportunity, should_alert
-from .config import config
-from .db import get_existing, mark_inactive, upsert_listing
-from .logger import get_logger
+from .services.alerts import notify_opportunity, should_alert
+from .infrastructure.config import config
+from .infrastructure.db import find_near_duplicate, get_existing, mark_inactive, upsert_listing
+from .infrastructure.logger import get_logger
 from .models import Listing
-from .scorer import calcular_score, contar_campos_vacios
+from .services.scorer import calcular_score, contar_campos_vacios
 from .scrapers import get_scraper
 
 log = get_logger("runner")
@@ -116,6 +116,16 @@ def run_target(target: dict, stats: RunStats) -> Optional[set[str]]:
         try:
             existed_before = get_existing(listing.url) is not None
             _enrich_local_score(listing)
+
+            if not existed_before:
+                near_dup = find_near_duplicate(listing)
+                if near_dup:
+                    listing.pending_review = True
+                    listing.duplicate_candidate_of = near_dup["url"]
+                    log.info(
+                        "duplicate_candidate_detected",
+                        extra={"url": listing.url, "similar_to": near_dup["url"]},
+                    )
 
             saved = upsert_listing(listing)
             if saved is None:

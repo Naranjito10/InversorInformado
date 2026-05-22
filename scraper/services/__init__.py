@@ -1,0 +1,1 @@
+"""Servicios de dominio: normalización, scoring y alertas."""

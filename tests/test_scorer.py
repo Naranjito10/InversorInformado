@@ -4,7 +4,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from scraper.scorer import calcular_score, contar_campos_vacios
+from scraper.services.scorer import calcular_score, contar_campos_vacios
 
 
 def test_score_alto_rentabilidad_y_descuento():

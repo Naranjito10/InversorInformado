@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Iterator, Optional
 
-from ..logger import get_logger
+from ..infrastructure.logger import get_logger
 from ..models import Listing
 
 
@@ -48,8 +48,8 @@ class BaseScraper(ABC):
         Recorre paginas de busqueda hasta alcanzar max_pages O max_results,
         lo que ocurra primero.
         """
-        from ..http_client import fetch_with_delay
-        from ..normalizer import normalize
+        from ..infrastructure.http_client import fetch_with_delay
+        from ..services.normalizer import normalize
 
         result = ScraperResult(source=self.SOURCE)
         url = search_url

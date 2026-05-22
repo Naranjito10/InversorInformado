@@ -4,7 +4,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from scraper.normalizer import (
+from scraper.services.normalizer import (
     canonical_url, clean_float, clean_int, clean_str,
     detect_cee, detect_estado, detect_features, normalize,
 )

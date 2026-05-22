@@ -1,0 +1,1 @@
+"""Infraestructura: configuración, logging, HTTP y base de datos."""
