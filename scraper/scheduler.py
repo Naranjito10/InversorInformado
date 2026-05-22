@@ -5,8 +5,8 @@ import signal
 import sys
 import time
 
-from .config import config
-from .logger import get_logger
+from .infrastructure.config import config
+from .infrastructure.logger import get_logger
 from .runner import run_cycle
 
 log = get_logger("scheduler")

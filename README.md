@@ -1,289 +1,292 @@
-# 🏠 Real Estate Scraper — Vigilancia del mercado para inversores
+# 🏠 InversorInformado — Vigilancia del mercado inmobiliario
 
-Sistema automatizado que vigila Idealista, Fotocasa, Habitaclia y Casaradar
-cada hora, almacena los anuncios en Supabase, calcula un **score 0–100** por
-vivienda y envía alertas por **email** y **Telegram** cuando aparece una
-oportunidad.
+Sistema automatizado que vigila Idealista, Fotocasa, Habitaclia y Pisos.com,
+almacena los anuncios en Supabase, calcula un **score 0–100** por vivienda y
+notifica por **email** y **Telegram** cuando aparece una oportunidad.
 
-Pensado para tres perfiles de inversión:
-* Compra para alquilar (rentabilidad)
-* Reforma y venta
-* Alquiler vacacional
+Incluye una **interfaz web** (React + FastAPI) con dashboard de anuncios,
+filtros, paginación, buscador por zona y exportación a Excel.
 
 ---
 
 ## 📐 Arquitectura
 
 ```
-┌──────────────────┐    ┌───────────────────┐    ┌──────────────────┐
-│  Cron / GH Action │──▶│  Scraper (Python) │──▶│ Supabase (Postgres)│
-└──────────────────┘    └───────────────────┘    └──────────────────┘
-                                │                          │
-                                ▼                          │
-                        ┌───────────────┐                  │
-                        │   Scorer      │                  │
-                        │ (Python+SQL)  │                  │
-                        └───────────────┘                  │
-                                │                          │
-                                ▼                          ▼
-                        ┌───────────────┐         ┌──────────────────┐
-                        │ Alerts        │         │  Excel / Metabase│
-                        │ Email+Telegram│         │  (consultas)     │
-                        └───────────────┘         └──────────────────┘
+┌─────────────────────────────────────────┐
+│          React Frontend (Vite)          │
+│  Dashboard · Filtros · Buscador · Excel │
+└────────────────────┬────────────────────┘
+                     │ /api/*
+┌────────────────────▼────────────────────┐
+│           FastAPI Backend               │
+│  /api/listings  /api/scraper            │
+│  /api/zones     /api/export/excel       │
+└────────────────────┬────────────────────┘
+                     │
+┌────────────────────▼────────────────────┐
+│         Scraper (Python)                │
+│  infrastructure/  →  config, db, http   │
+│  services/        →  normalizer, scorer │
+│  scrapers/        →  un parser/portal   │
+└────────────────────┬────────────────────┘
+                     │
+┌────────────────────▼────────────────────┐
+│        Supabase (PostgreSQL)            │
+│  Tabla listings · Triggers SQL · Score  │
+└─────────────────────────────────────────┘
 ```
 
 ---
 
-## 🚀 Instalación rápida (15–20 min)
+## 🚀 Instalación desde cero
 
-### 1. Clonar el repositorio
+### Requisitos previos
 
-```bash
+- **Python 3.12** (no usar 3.14 — incompatible con pyiceberg)
+- **Node.js 18+**
+
+### 1. Clonar y preparar el entorno Python
+
+```powershell
 git clone <tu-repo>
-cd real_estate_scraper
-python -m venv .venv
-source .venv/bin/activate            # macOS / Linux
-# .venv\Scripts\activate              # Windows
+cd InversorInformado
+
+# Crear venv con Python 3.12 explícitamente
+py -3.12 -m venv .venv
+.venv\Scripts\Activate.ps1
+
+# Si PowerShell bloquea la activación:
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+
 pip install -r requirements.txt
-```
-
-Si vas a scrapear Idealista o Fotocasa instala también el navegador headless
-para Scrapling:
-
-```bash
 python -m playwright install chromium
 ```
 
-### 2. Crear el proyecto en Supabase
+### 2. Instalar el frontend
 
-1. Crea cuenta gratis en <https://supabase.com>.
-2. **New project** → anota la **URL** y la **service_role key**.
-3. En **SQL Editor**, ejecuta en orden:
-   * `supabase/001_create_listings.sql`
-   * `supabase/002_create_price_history.sql`
-   * `supabase/003_scoring_function.sql`
-
-### 3. Configurar `.env`
-
-```bash
-cp .env.example .env
+```powershell
+cd frontend
+npm install
+cd ..
 ```
 
-Edita `.env` con:
+### 3. Configurar Supabase
 
-* `SUPABASE_URL` y `SUPABASE_KEY` del paso 2.
-* `SMTP_*` con tu cuenta de email (Gmail: usa una *App Password*).
-* `TELEGRAM_BOT_TOKEN` y `TELEGRAM_CHAT_ID` (opcional — abajo cómo crearlos).
+1. Crea proyecto en <https://supabase.com> → anota la **URL** y la **anon key**.
+2. En **SQL Editor**, ejecuta en orden:
+   - `supabase/001_create_listings.sql`
+   - `supabase/002_create_price_history.sql`
+   - `supabase/003_scoring_function.sql`
 
-### 4. Definir qué buscar
+### 4. Crear `.env`
 
-Edita `config/search_targets.json` y pon las URLs de búsqueda que ya tienes en
-los portales (ej. *“Pisos en venta en Eixample, Barcelona, precio max 400.000”*).
-Copia la URL del portal tal cual aparece en el navegador después de aplicar
-filtros — el sistema iterará las paginaciones por ti.
+```env
+SUPABASE_URL=https://xxxx.supabase.co
+SUPABASE_KEY=tu-anon-key
 
-### 5. Probar un ciclo manual
+# Notificaciones (opcional)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=tu@gmail.com
+SMTP_PASS=xxxx-xxxx-xxxx-xxxx
+ALERT_EMAIL_FROM=tu@gmail.com
+ALERT_EMAIL_TO=destinatario@gmail.com
 
-```bash
+TELEGRAM_BOT_TOKEN=token-de-botfather
+TELEGRAM_CHAT_ID=tu-chat-id
+```
+
+### 5. Configurar búsquedas automáticas
+
+Edita `config/search_targets.json` con las URLs de búsqueda de cada portal:
+
+```json
+{
+  "targets": [
+    {
+      "source": "habitaclia",
+      "name": "Barcelona Eixample",
+      "url": "https://www.habitaclia.com/...",
+      "max_pages": 3,
+      "max_results": 100,
+      "filters": { "price_min": 150000, "price_max": 400000 }
+    }
+  ]
+}
+```
+
+Fuentes soportadas: `idealista`, `fotocasa`, `habitaclia`, `pisos`.
+
+---
+
+## ▶️ Arrancar la aplicación
+
+Necesitas **dos terminales** abiertas en la raíz del proyecto:
+
+**Terminal 1 — Backend (FastAPI):**
+```powershell
+.venv\Scripts\Activate.ps1
+uvicorn api.main:app --reload
+```
+Queda en `http://localhost:8000` · Documentación: `http://localhost:8000/docs`
+
+**Terminal 2 — Frontend (React):**
+```powershell
+cd frontend
+npm run dev
+```
+Abre `http://localhost:5173` en el navegador.
+
+---
+
+## 🖥️ Uso de la interfaz web
+
+### Dashboard
+- **Tarjetas**: resumen de anuncios activos, nuevos esta semana, score medio y bajadas de precio.
+- **Filtros**: municipio, portal, score label, score mínimo y rango de precio.
+- **Tabla**: 10 anuncios por página ordenados por score, con enlace directo al anuncio original.
+- **Exportar Excel**: descarga un `.xlsx` con los anuncios filtrados, con colores por score.
+- **Lanzar scraper**: ejecuta un ciclo completo en background con los targets configurados.
+
+### Buscador
+Lanza una búsqueda puntual sin esperar al ciclo automático:
+1. Escribe la zona en el campo de autocompletar (ej: "sants", "eixamp").
+2. Pon precio mínimo y máximo.
+3. Marca los portales que quieras.
+4. Elige cuántas páginas scrapear (10 = rápido, 100 = completo).
+5. Pulsa **Buscar ahora** — los resultados aparecen en el Dashboard en 1–3 minutos.
+
+---
+
+## ⚙️ Ejecutar el scraper sin interfaz
+
+```powershell
+# Ciclo único (probar / ejecutar manualmente)
 python -m scraper.scheduler once
-```
 
-Debería:
-* Recorrer las URLs configuradas.
-* Guardar resultados en Supabase.
-* Imprimir un resumen y dejar los logs en `logs/scraper.jsonl`.
-
-Confirma desde la web de Supabase: **Table editor → listings**.
-
-### 6. Programar la ejecución horaria
-
-#### Opción A — GitHub Actions (gratis, recomendada)
-
-1. Sube el repo a GitHub (privado).
-2. En **Settings → Secrets and variables → Actions**, añade los secrets que
-   coincidan con tu `.env` (`SUPABASE_URL`, `SUPABASE_KEY`, `SMTP_*`,
-   `TELEGRAM_*`, etc.).
-3. El workflow `.github/workflows/scrape.yml` ya está listo: se ejecutará
-   cada hora.
-4. Para forzar una ejecución: **Actions → Scrape viviendas → Run workflow**.
-
-#### Opción B — cron local
-
-```bash
-crontab -e
-# Añadir (cada hora, en el minuto 0):
-0 * * * * cd /ruta/al/proyecto && /ruta/.venv/bin/python -m scraper.scheduler once >> logs/cron.log 2>&1
-```
-
-#### Opción C — APScheduler en primer plano
-
-```bash
+# Planificador continuo (cada 60 minutos)
 python -m scraper.scheduler
-# Bloquea el proceso. Útil con systemd / supervisord / pm2.
 ```
 
 ---
 
 ## 📊 Sistema de score
 
-El score (0–100) se recalcula automáticamente en cada upsert (trigger SQL) y
-está espejado en `scraper/scorer.py` por si quieres testearlo offline.
+El score (0–100) se recalcula en cada upsert mediante un trigger SQL y está
+espejado en `scraper/services/scorer.py` para tests offline.
 
-| Componente              | Puntos máx | Detalle |
-|-------------------------|-----------|---------|
-| Rentabilidad bruta      | 40        | ≥7%=40 · ≥5%=25 · ≥4%=10 |
-| Descuento vs zona       | 25        | ≤-10%=25 · ≤-5%=15 · ≤0%=8 |
-| Estado y extras         | 20        | Buen estado 8 · Ascensor/Terraza/Garaje 4 c/u |
-| Señales de urgencia     | 15        | Bajada precio 10 · >60 días en mercado 5 |
-| Penalizaciones          | —         | Campos vacíos>5 → cap 40 · A reformar -5 |
+| Componente          | Puntos | Detalle |
+|---------------------|--------|---------|
+| Rentabilidad bruta  | 0–40   | ≥7%=40 · ≥5%=25 · ≥4%=10 |
+| Descuento vs zona   | 0–25   | ≤-10%=25 · ≤-5%=15 · ≤0%=8 |
+| Estado y extras     | 0–20   | Buen estado 8 · Ascensor/Terraza/Garaje 4 c/u |
+| Señales urgencia    | 0–15   | Bajada precio 10 · >60 días en mercado 5 |
+| Penalizaciones      | —      | Campos vacíos>5 → cap 40 · A reformar -5 |
 
-Etiquetas:
-
-| Label        | Rango  | Color   |
-|--------------|--------|---------|
-| `alto`       | ≥ 80   | 🟢 verde `#22c55e` |
-| `medio`      | 50–79  | 🟡 amarillo `#f59e0b` |
-| `normal`     | 0–49   | sin resaltar |
-| `incompleto` | (>3 campos NULL) | 🔴 rojo `#ef4444` |
-| `bajada_precio`| bool sobre cualquier label | 🟣 morado `#a855f7` |
+| Label          | Rango       | Color    |
+|----------------|-------------|----------|
+| `alto`         | ≥ 80        | 🟢 verde |
+| `medio`        | 50–79       | 🟡 amarillo |
+| `normal`       | 0–49        | sin resaltar |
+| `incompleto`   | >3 campos vacíos | 🔴 rojo |
+| `bajada_precio`| (campo bool) | 🟣 morado |
 
 ---
 
 ## 🔔 Configurar Telegram (opcional)
 
-1. Abre Telegram → habla con [@BotFather](https://t.me/BotFather) → `/newbot`.
-2. Anota el **token** que te da.
-3. Para descubrir tu `chat_id`: envía cualquier mensaje a tu bot, luego visita:
-   `https://api.telegram.org/bot<TU_TOKEN>/getUpdates`
-   y busca `"chat":{"id":<numero>...}`.
-4. Pega ambos en `.env`.
+1. Habla con [@BotFather](https://t.me/BotFather) → `/newbot` → anota el token.
+2. Envía un mensaje a tu bot, luego visita:
+   `https://api.telegram.org/bot<TOKEN>/getUpdates`
+   y busca `"chat":{"id":<numero>}`.
+3. Añade ambos valores al `.env`.
 
 ---
 
-## 📤 Exportar a Excel con colores
-
-```bash
-# Todo el stock activo
-python -m export.export_excel --out export/todo.xlsx
-
-# Solo Barcelona, score >= 60, precio entre 100k y 400k
-python -m export.export_excel \
-  --municipio "Barcelona" \
-  --precio-min 100000 --precio-max 400000 \
-  --score-min 60 \
-  --out export/barcelona_60.xlsx
-
-# Solo oportunidades de alto score
-python -m export.export_excel --score-label alto --out export/alto.xlsx
-```
-
-El fichero generado lleva colores aplicados según `score_label`, hipervínculos
-en la columna URL y filtros automáticos.
-
----
-
-## 📈 Dashboard (Metabase / Grafana / Supabase Studio)
-
-Ver `dashboard/README.md` para instrucciones detalladas y consultas listas
-para copiar.
-
----
-
-## ❓ Preguntas que el sistema responde
-
-Todas estas se pueden ejecutar como **SQL directo en Supabase** o desde
-Metabase. Hay vistas pre-creadas en `003_scoring_function.sql`:
-
-| Pregunta | Consulta |
-|----------|----------|
-| Top 10 rentabilidad esta semana | `select * from v_top_rentabilidad where primera_deteccion >= now()-interval '7 days' limit 10;` |
-| Bajadas de precio últimos 7 días | `select * from v_bajadas_recientes;` |
-| Precio medio €/m² por barrio | `select * from v_precio_medio_barrio;` |
-| Anuncios > 90 días | `select * from listings where dias_en_mercado > 90 and activo;` |
-| Comparativa fuentes | Ver `dashboard/README.md` |
-
----
-
-## 🛠 Estructura del proyecto
+## 🗂️ Estructura del proyecto
 
 ```
-real_estate_scraper/
+InversorInformado/
+├── api/                          # Backend FastAPI
+│   ├── main.py
+│   ├── schemas.py
+│   ├── routers/                  # listings, scraper, zones, export
+│   └── services/                 # listings_service, scraper_service, export_service
+├── frontend/                     # React + Vite + Tailwind
+│   └── src/
+│       ├── pages/                # Dashboard, SearchForm
+│       ├── components/           # StatsCards, Filters, ListingsTable
+│       ├── services/api.ts
+│       └── types/index.ts
+├── scraper/                      # Motor de scraping
+│   ├── infrastructure/           # config, logger, http_client, db
+│   ├── services/                 # normalizer, scorer, alerts
+│   ├── scrapers/                 # idealista, fotocasa, habitaclia, pisos
+│   ├── models.py
+│   ├── runner.py
+│   └── scheduler.py
 ├── config/
-│   └── search_targets.json       # URLs de búsqueda a vigilar
-├── scraper/
-│   ├── config.py                 # Carga .env
-│   ├── logger.py                 # Logs JSONL
-│   ├── models.py                 # Pydantic models
-│   ├── normalizer.py             # Datos crudos → esquema único
-│   ├── http_client.py            # Anti-ban (UA rotation, delays, Scrapling)
-│   ├── db.py                     # Capa Supabase con upsert
-│   ├── scorer.py                 # Score 0-100 (espejo Python del SQL)
-│   ├── alerts.py                 # Email + Telegram
-│   ├── runner.py                 # Orquestador de un ciclo
-│   ├── scheduler.py              # APScheduler cada N min
-│   └── scrapers/
-│       ├── base.py
-│       ├── idealista.py
-│       ├── fotocasa.py
-│       ├── habitaclia.py
-│       └── casaradar.py
-├── supabase/
-│   ├── 001_create_listings.sql
-│   ├── 002_create_price_history.sql
-│   └── 003_scoring_function.sql
-├── export/
-│   └── export_excel.py           # Excel con colores (openpyxl)
-├── dashboard/
-│   └── README.md                 # Metabase / Grafana
-├── tests/
-│   ├── test_scorer.py
-│   └── test_normalizer.py
-├── .github/workflows/scrape.yml  # Cron horario en GitHub
-├── requirements.txt
-├── .env.example
-└── README.md                     # (este fichero)
+│   ├── search_targets.json       # URLs de búsqueda automática
+│   └── zones.json                # Zonas disponibles por portal (~80 zonas)
+├── supabase/                     # Migraciones SQL
+├── tests/                        # pytest: scorer, normalizer, http_client
+├── .env                          # Variables de entorno (no en git)
+└── requirements.txt
 ```
-
----
-
-## ⚖️ Consideraciones legales y técnicas
-
-* **Respeta `robots.txt`** de cada portal. El scraper introduce *delays*
-  aleatorios entre 2 y 5 segundos por defecto.
-* **No abuse**: la frecuencia horaria + 3 páginas por búsqueda es suficiente
-  para detectar novedades sin generar tráfico problemático. No bajes el
-  intervalo sin un buen motivo.
-* **Uso personal**: este sistema está pensado para vigilancia personal de un
-  inversor; no redistribuyas los datos scrapeados.
-* **Anti-ban**: si una fuente empieza a fallar (status 403/429 sostenidos),
-  añade proxies rotativos en `SCRAPER_PROXIES` o reduce `max_pages` en los
-  targets.
-* **Selectores HTML**: los portales cambian su DOM cada cierto tiempo. Cuando
-  algún scraper deje de extraer datos, revisa los selectores en
-  `scraper/scrapers/<fuente>.py`. Los logs JSONL en `logs/scraper.jsonl` te
-  dirán exactamente qué falló (`fetch_failed`, `parse_error`, etc.).
 
 ---
 
 ## 🧪 Tests
 
-```bash
+```powershell
 pytest -v
 ```
 
-Cubren la lógica de scoring (espejo del SQL) y el normalizador.
+Cubren scoring (espejo del SQL), normalización de datos y cliente HTTP.
+
+---
+
+## 📅 Automatización horaria — GitHub Actions
+
+1. Sube el repo a GitHub (privado).
+2. En **Settings → Secrets → Actions**, añade los valores del `.env` como secrets.
+3. El workflow `.github/workflows/scrape.yml` se ejecuta cada hora automáticamente.
+4. Ejecución manual: **Actions → Scrape viviendas → Run workflow**.
+
+---
+
+## 🛡️ Estado de los portales
+
+| Portal     | Estado      | Notas |
+|------------|-------------|-------|
+| Habitaclia | Funcionando | 200 OK |
+| Pisos.com  | Funcionando | 200 OK |
+| Idealista  | Bloqueado   | 403 DataDome — requiere proxies |
+| Fotocasa   | Verificar   | Comprobar URL en `search_targets.json` |
+
+Para Idealista: añadir proxies rotativos en `SCRAPER_PROXIES` del `.env`.
 
 ---
 
 ## 🐛 Troubleshooting
 
-| Síntoma | Posible causa | Acción |
-|---------|---------------|--------|
-| `supabase_not_configured` en logs | Faltan `SUPABASE_URL`/`KEY` | Revisar `.env` |
-| Todos los listings con `campos_vacios` alto | Selectores HTML obsoletos | Inspeccionar `raw_data` en BD y actualizar el scraper |
-| 0 anuncios scrapeados de Idealista | DataDome | Asegúrate de tener `playwright install chromium`, considera proxies |
-| Alertas no llegan | SMTP/Telegram mal configurado | Probar `python -c "from scraper.alerts import send_email; send_email('test','hola')"` |
-| GitHub Action falla por timeout | Demasiados targets | Reduce `max_pages` o divide en varios workflows |
+| Síntoma | Causa | Solución |
+|---------|-------|----------|
+| `supabase_not_configured` en logs | Variables incorrectas | Revisar `SUPABASE_URL` y `SUPABASE_KEY` en `.env` |
+| 0 anuncios de Idealista | DataDome activo | Añadir proxies en `SCRAPER_PROXIES` |
+| Frontend no carga | Backend no está corriendo | Arrancar `uvicorn api.main:app --reload` primero |
+| Error al instalar deps | Python 3.14 incompatible | Usar `py -3.12 -m venv .venv` |
+| Alertas no llegan | SMTP/Telegram sin configurar | Rellenar variables de notificación en `.env` |
+| Selectores sin datos | El portal cambió su HTML | Revisar `raw_data` en Supabase y actualizar `scraper/scrapers/<fuente>.py` |
+
+---
+
+## ⚖️ Consideraciones legales y técnicas
+
+- **Delays aleatorios** de 2–5 s entre peticiones para no sobrecargar los portales.
+- **Uso personal**: el sistema está pensado para vigilancia propia; no redistribuyas los datos.
+- **Frecuencia recomendada**: ciclo horario con ≤5 páginas por búsqueda.
+- Si una fuente falla sostenidamente (403/429), revisa los logs en `logs/scraper.jsonl`.
 
 ---
 

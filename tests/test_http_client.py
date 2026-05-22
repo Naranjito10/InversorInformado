@@ -1,11 +1,11 @@
-"""Tests para scraper/http_client.py."""
+"""Tests para scraper/infrastructure/http_client.py."""
 from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from scraper.http_client import FetchError, _is_blocked, fetch_html, fetch_with_delay
+from scraper.infrastructure.http_client import FetchError, _is_blocked, fetch_html, fetch_with_delay
 
 
 # ---------------------------------------------------------------------------
@@ -43,8 +43,8 @@ class TestFetchHtmlHttp:
         mock_page = MagicMock()
         mock_page.html_content = "<html>contenido ok</html>"
 
-        with patch("scraper.http_client._HAS_SCRAPLING", True), \
-             patch("scraper.http_client.Fetcher") as mock_fetcher:
+        with patch("scraper.infrastructure.http_client._HAS_SCRAPLING", True), \
+             patch("scraper.infrastructure.http_client.Fetcher") as mock_fetcher:
             mock_fetcher.get.return_value = mock_page
             result = fetch_html("https://example.com", use_js=False)
 
@@ -55,9 +55,9 @@ class TestFetchHtmlHttp:
         mock_http_page = MagicMock()
         mock_http_page.html_content = "<html>datadome</html>"
 
-        with patch("scraper.http_client._HAS_SCRAPLING", True), \
-             patch("scraper.http_client.Fetcher") as mock_fetcher, \
-             patch("scraper.http_client._fetch_js", return_value="<html>contenido real</html>") as mock_js:
+        with patch("scraper.infrastructure.http_client._HAS_SCRAPLING", True), \
+             patch("scraper.infrastructure.http_client.Fetcher") as mock_fetcher, \
+             patch("scraper.infrastructure.http_client._fetch_js", return_value="<html>contenido real</html>") as mock_js:
             mock_fetcher.get.return_value = mock_http_page
             result = fetch_html("https://example.com", use_js=False)
 
@@ -65,9 +65,9 @@ class TestFetchHtmlHttp:
         mock_js.assert_called_once()
 
     def test_fetcher_exception_falls_back_to_js_on_403(self):
-        with patch("scraper.http_client._HAS_SCRAPLING", True), \
-             patch("scraper.http_client.Fetcher") as mock_fetcher, \
-             patch("scraper.http_client._fetch_js", return_value="<html>ok via js</html>") as mock_js:
+        with patch("scraper.infrastructure.http_client._HAS_SCRAPLING", True), \
+             patch("scraper.infrastructure.http_client.Fetcher") as mock_fetcher, \
+             patch("scraper.infrastructure.http_client._fetch_js", return_value="<html>ok via js</html>") as mock_js:
             mock_fetcher.get.side_effect = Exception("403 Forbidden")
             result = fetch_html("https://example.com", use_js=False)
 
@@ -75,15 +75,15 @@ class TestFetchHtmlHttp:
         mock_js.assert_called_once()
 
     def test_fetcher_non_block_exception_raises_fetch_error(self):
-        with patch("scraper.http_client._HAS_SCRAPLING", True), \
-             patch("scraper.http_client.Fetcher") as mock_fetcher:
+        with patch("scraper.infrastructure.http_client._HAS_SCRAPLING", True), \
+             patch("scraper.infrastructure.http_client.Fetcher") as mock_fetcher:
             mock_fetcher.get.side_effect = Exception("Connection timeout")
             with pytest.raises(FetchError, match="Connection timeout"):
                 fetch_html("https://example.com", use_js=False)
 
     def test_no_scrapling_no_httpx_raises(self):
-        with patch("scraper.http_client._HAS_SCRAPLING", False), \
-             patch("scraper.http_client._HAS_HTTPX", False):
+        with patch("scraper.infrastructure.http_client._HAS_SCRAPLING", False), \
+             patch("scraper.infrastructure.http_client._HAS_HTTPX", False):
             with pytest.raises(FetchError, match="Ni scrapling ni httpx"):
                 fetch_html("https://example.com", use_js=False)
 
@@ -99,8 +99,8 @@ class TestFetchHtmlJs:
         mock_session = MagicMock()
         mock_session.fetch.return_value = mock_page
 
-        with patch("scraper.http_client._HAS_SCRAPLING", True), \
-             patch("scraper.http_client._get_stealth_session", return_value=mock_session):
+        with patch("scraper.infrastructure.http_client._HAS_SCRAPLING", True), \
+             patch("scraper.infrastructure.http_client._get_stealth_session", return_value=mock_session):
             result = fetch_html("https://idealista.com/...", use_js=True)
 
         assert result == "<html>js rendered</html>"
@@ -110,13 +110,13 @@ class TestFetchHtmlJs:
         mock_session = MagicMock()
         mock_session.fetch.return_value = None
 
-        with patch("scraper.http_client._HAS_SCRAPLING", True), \
-             patch("scraper.http_client._get_stealth_session", return_value=mock_session):
+        with patch("scraper.infrastructure.http_client._HAS_SCRAPLING", True), \
+             patch("scraper.infrastructure.http_client._get_stealth_session", return_value=mock_session):
             with pytest.raises(FetchError, match="vacia"):
                 fetch_html("https://example.com", use_js=True)
 
     def test_no_scrapling_raises(self):
-        with patch("scraper.http_client._HAS_SCRAPLING", False):
+        with patch("scraper.infrastructure.http_client._HAS_SCRAPLING", False):
             with pytest.raises(FetchError, match="scrapling no instalado"):
                 fetch_html("https://example.com", use_js=True)
 
@@ -127,19 +127,19 @@ class TestFetchHtmlJs:
 
 class TestFetchWithDelay:
     def test_returns_html_on_success(self):
-        with patch("scraper.http_client.fetch_html", return_value="<html/>"), \
-             patch("scraper.http_client.random_delay"):
+        with patch("scraper.infrastructure.http_client.fetch_html", return_value="<html/>"), \
+             patch("scraper.infrastructure.http_client.random_delay"):
             result = fetch_with_delay("https://example.com")
         assert result == "<html/>"
 
     def test_returns_none_on_fetch_error(self):
-        with patch("scraper.http_client.fetch_html", side_effect=FetchError("fail")), \
-             patch("scraper.http_client.random_delay"):
+        with patch("scraper.infrastructure.http_client.fetch_html", side_effect=FetchError("fail")), \
+             patch("scraper.infrastructure.http_client.random_delay"):
             result = fetch_with_delay("https://example.com")
         assert result is None
 
     def test_delay_called_on_success(self):
-        with patch("scraper.http_client.fetch_html", return_value="<html/>"), \
-             patch("scraper.http_client.random_delay") as mock_delay:
+        with patch("scraper.infrastructure.http_client.fetch_html", return_value="<html/>"), \
+             patch("scraper.infrastructure.http_client.random_delay") as mock_delay:
             fetch_with_delay("https://example.com")
         mock_delay.assert_called_once()

@@ -61,6 +61,10 @@ class Listing(BaseModel):
     ultima_actualizacion: Optional[datetime] = None
     activo: bool = True
 
+    # Deduplicación
+    pending_review: bool = False
+    duplicate_candidate_of: Optional[str] = None
+
     # Datos crudos para reparsear si hace falta
     raw_data: Optional[dict[str, Any]] = None
 
@@ -96,6 +100,6 @@ class Listing(BaseModel):
         # Quitar None (Postgres acepta omision)
         cleaned = {
             k: v for k, v in data.items()
-            if v is not None or k in {"activo", "veces_visto", "bajada_precio"}
+            if v is not None or k in {"activo", "veces_visto", "bajada_precio", "pending_review"}
         }
         return cleaned
