@@ -16,7 +16,6 @@ PORTAL_TEST_URLS = {
     "pisos":      "https://www.pisos.com/venta/pisos-barcelona/",
     "idealista":  "https://www.idealista.com/venta-viviendas/barcelona/",
     "fotocasa":   "https://www.fotocasa.es/es/comprar/viviendas/barcelona-capital/todas-las-zonas/l",
-    "casaradar":  "https://www.casaradar.es/",
 }
 
 _HEADERS = {
@@ -133,8 +132,6 @@ def _estimate_listings(portal: str, html: str) -> int:
             return html.count('"item "') or html.count('item-link')
         if portal == "fotocasa":
             return html.count('re-CardPackMain') or html.count('property-list-item')
-        if portal == "casaradar":
-            return html.count('property-card') or html.count('listing-item') or html.count('/comprar/')
     except Exception:
         pass
     return 0

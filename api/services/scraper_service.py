@@ -78,17 +78,6 @@ def _build_url(portal: str, base: str, price_min: Optional[int], price_max: Opti
         if "fecharecientedesde" not in url:
             url += "/fecharecientedesde-desc"
         return url + "/"
-    if portal == "casaradar":
-        url = base.rstrip("/")
-        params: dict = {}
-        if price_min:
-            params["precio_min"] = str(price_min)
-        if price_max:
-            params["precio_max"] = str(price_max)
-        if params:
-            sep = "&" if "?" in url else "?"
-            return url + sep + urlencode(params)
-        return url + "/"
     return base
 
 

@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { fetchZones, runSearch } from "../services/api";
 import type { SearchRequest, SearchResponse } from "../types";
 
-const PORTALES = ["idealista", "fotocasa", "habitaclia", "pisos", "casaradar"];
+const PORTALES = ["idealista", "fotocasa", "habitaclia", "pisos"];
 const PAGINAS = [10, 20, 50, 100];
 
 const initialForm: SearchRequest = {
