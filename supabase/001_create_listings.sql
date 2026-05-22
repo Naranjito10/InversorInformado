@@ -10,7 +10,7 @@ create table if not exists public.listings (
 
     -- Identificacion
     url                       text not null unique,
-    fuente                    text not null,             -- idealista / fotocasa / habitaclia / casaradar
+    fuente                    text not null,             -- idealista / fotocasa / habitaclia / pisos
     titulo                    text,
 
     -- Precios

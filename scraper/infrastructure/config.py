@@ -52,7 +52,7 @@ class ScraperConfig:
     proxies: List[str] = field(default_factory=list)
     search_targets_file: str = "config/search_targets.json"
     mark_inactive: bool = False  # desactivar anuncios no vistos (solo si max_pages cubre el total)
-    disabled_sources: List[str] = field(default_factory=list)  # ej. ["casaradar","idealista"]
+    disabled_sources: List[str] = field(default_factory=list)  # ej. ["idealista","pisos"]
 
 
 @dataclass

@@ -10,7 +10,6 @@ import json
 
 import pytest
 
-from scraper.scrapers.casaradar import CasaradarScraper
 from scraper.scrapers.fotocasa import FotocasaScraper
 from scraper.scrapers.habitaclia import HabitacliaScraper
 from scraper.scrapers.idealista import IdealistaScraper
@@ -120,22 +119,6 @@ HABITACLIA_HTML = """
 </body></html>
 """
 
-CASARADAR_HTML = """
-<html><body>
-  <article class="property">
-    <a href="/comprar/piso-barcelona-55544" title="Piso en venta">
-      Piso en venta Barcelona
-    </a>
-    <span class="price">175.000 €</span>
-    <ul class="specs">
-      <li>60 m²</li>
-      <li>2 hab.</li>
-      <li>1 baño</li>
-    </ul>
-    <span class="location">Sant Andreu, Barcelona</span>
-  </article>
-</body></html>
-"""
 
 
 # ---------------------------------------------------------------------------
@@ -282,41 +265,3 @@ class TestHabitacliaScraper:
         assert self.scraper.USE_JS is True
 
 
-# ---------------------------------------------------------------------------
-# Casaradar
-# ---------------------------------------------------------------------------
-
-class TestCasaradarScraper:
-    scraper = CasaradarScraper()
-
-    def test_parse_returns_items(self):
-        items = list(self.scraper.parse_search_page(CASARADAR_HTML, "https://www.casaradar.es/"))
-        assert len(items) == 1
-
-    def test_parse_url(self):
-        items = list(self.scraper.parse_search_page(CASARADAR_HTML, ""))
-        assert "casaradar.es" in items[0]["url"]
-        assert "55544" in items[0]["url"]
-
-    def test_parse_precio(self):
-        items = list(self.scraper.parse_search_page(CASARADAR_HTML, ""))
-        assert "175" in str(items[0].get("precio_venta", ""))
-
-    def test_parse_metros(self):
-        items = list(self.scraper.parse_search_page(CASARADAR_HTML, ""))
-        assert "60" in str(items[0].get("metros_cuadrados", ""))
-
-    def test_next_page_query_param(self):
-        html = "<html></html>"
-        url = self.scraper.next_page_url(html, "https://www.casaradar.es/venta?page=2", 2)
-        assert url is not None
-        assert "page=3" in url
-
-    def test_next_page_adds_param_when_missing(self):
-        html = "<html></html>"
-        url = self.scraper.next_page_url(html, "https://www.casaradar.es/venta", 1)
-        assert url is not None
-        assert "page=2" in url
-
-    def test_use_js_flag(self):
-        assert self.scraper.USE_JS is False

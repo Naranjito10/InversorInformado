@@ -1,850 +1,766 @@
-{
-  "_notes": {
-    "idealista_403": "Idealista bloquea httpx sin stealth. Los slugs son correctos — el scraper usa StealthyFetcher.",
-    "fotocasa_405": "Provincias pequenas requieren stealth (405 es anti-bot). URLs estructuralmente correctas.",
-    "habitaclia": "Solo cubre Cataluna. Urls verificadas manualmente.",
-    "pisos_slugs": "Pisos.com usa nombre directo sin 'provincia_de_'. Bilinguismo: guipuzcoa_gipuzkoa, castellon_castello."
-  },
-  "zones": {
-    "madrid-capital": {
-      "label": "Madrid - Capital",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/madrid-capital/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/madrid-capital/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-madrid/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "madrid-provincia": {
-      "label": "Madrid - Resto de la Comunidad",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/madrid-provincia/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/madrid-provincia/todas-las-zonas/l",
-        "pisos": null,
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "barcelona-capital": {
-      "label": "Barcelona - Capital",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/barcelona/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/barcelona-capital/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-barcelona/",
-        "habitaclia": "https://www.habitaclia.com/viviendas-en-venta-barcelona.htm",
-        "casaradar": null
-      }
-    },
-    "barcelona-provincia": {
-      "label": "Barcelona - Resto de la Provincia",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/barcelona-provincia/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/barcelona/todas-las-zonas/l",
-        "pisos": null,
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "valencia-capital": {
-      "label": "Valencia - Capital",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/valencia/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/valencia/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-valencia/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "valencia-provincia": {
-      "label": "Valencia - Resto de la Provincia",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/valencia-provincia/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/comunidad-valenciana/todas-las-zonas/l",
-        "pisos": null,
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "alicante": {
-      "label": "Alicante / Costa Blanca",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/alicante-provincia/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/alicante/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-alicante/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "malaga": {
-      "label": "Malaga / Costa del Sol",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/malaga-provincia/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/malaga/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-malaga/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "sevilla": {
-      "label": "Sevilla (Provincia completa)",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/sevilla-provincia/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/sevilla/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-sevilla/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "murcia": {
-      "label": "Murcia (Provincia completa)",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/murcia-provincia/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/murcia/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-murcia/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "baleares": {
-      "label": "Islas Baleares (Mallorca, Ibiza, Menorca)",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/baleares/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/baleares/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-baleares/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "las-palmas": {
-      "label": "Islas Canarias - Las Palmas",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/las-palmas/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/las-palmas/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-las_palmas/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "tenerife": {
-      "label": "Islas Canarias - Tenerife",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/santa-cruz-de-tenerife/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/santa-cruz-de-tenerife/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-santa_cruz_de_tenerife/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "cadiz": {
-      "label": "Cadiz (Costa de la Luz)",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/cadiz-provincia/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/cadiz/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-cadiz/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "huelva": {
-      "label": "Huelva (Provincia)",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/huelva-provincia/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/huelva/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-huelva/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "cordoba": {
-      "label": "Cordoba (Provincia)",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/cordoba-provincia/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/cordoba/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-cordoba/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "jaen": {
-      "label": "Jaen (Provincia)",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/jaen-provincia/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/jaen/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-jaen/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "granada": {
-      "label": "Granada (Provincia)",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/granada-provincia/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/granada/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-granada/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "almeria": {
-      "label": "Almeria (Provincia)",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/almeria-provincia/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/almeria/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-almeria/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "zaragoza": {
-      "label": "Zaragoza (Provincia)",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/zaragoza-provincia/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/zaragoza/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-zaragoza/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "huesca": {
-      "label": "Huesca (Provincia)",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/huesca-provincia/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/huesca/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-huesca/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "teruel": {
-      "label": "Teruel (Provincia)",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/teruel-provincia/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/teruel/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-teruel/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "vizcaya": {
-      "label": "Vizcaya / Bilbao",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/vizcaya/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/vizcaya/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-vizcaya/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "guipuzcoa": {
-      "label": "Guipuzcoa / San Sebastian",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/guipuzcoa/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/guipuzcoa/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-guipuzcoa_gipuzkoa/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "alava": {
-      "label": "Alava / Vitoria",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/alava/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/alava/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-alava/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "a-coruna": {
-      "label": "A Coruna (Provincia)",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/a-coruna-provincia/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/a-coruna/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-a_coruna/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "pontevedra": {
-      "label": "Pontevedra (Provincia)",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/pontevedra-provincia/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/pontevedra/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-pontevedra/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "lugo": {
-      "label": "Lugo (Provincia)",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/lugo-provincia/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/lugo/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-lugo/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "ourense": {
-      "label": "Ourense (Provincia)",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/ourense-provincia/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/ourense/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-ourense/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "asturias": {
-      "label": "Asturias",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/asturias/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/asturias/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-asturias/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "cantabria": {
-      "label": "Cantabria",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/cantabria/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/cantabria/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-cantabria/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "navarra": {
-      "label": "Navarra",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/navarra/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/navarra/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-navarra/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "la-rioja": {
-      "label": "La Rioja",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/la-rioja/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/la-rioja/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-la_rioja/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "valladolid": {
-      "label": "Valladolid (Provincia)",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/valladolid-provincia/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/valladolid/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-valladolid/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "burgos": {
-      "label": "Burgos (Provincia)",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/burgos-provincia/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/burgos/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-burgos/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "leon": {
-      "label": "Leon (Provincia)",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/leon-provincia/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/leon/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-leon/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "salamanca": {
-      "label": "Salamanca (Provincia)",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/salamanca-provincia/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/salamanca/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-salamanca/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "zamora": {
-      "label": "Zamora (Provincia)",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/zamora-provincia/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/zamora/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-zamora/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "avila": {
-      "label": "Avila (Provincia)",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/avila-provincia/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/avila/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-avila/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "segovia": {
-      "label": "Segovia (Provincia)",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/segovia-provincia/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/segovia/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-segovia/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "palencia": {
-      "label": "Palencia (Provincia)",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/palencia-provincia/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/palencia/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-palencia/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "soria": {
-      "label": "Soria (Provincia)",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/soria-provincia/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/soria/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-soria/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "toledo": {
-      "label": "Toledo (Provincia)",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/toledo-provincia/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/toledo/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-toledo/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "ciudad-real": {
-      "label": "Ciudad Real (Provincia)",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/ciudad-real-provincia/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/ciudad-real/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-ciudad_real/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "cuenca": {
-      "label": "Cuenca (Provincia)",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/cuenca-provincia/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/cuenca/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-cuenca/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "guadalajara": {
-      "label": "Guadalajara (Provincia)",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/guadalajara-provincia/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/guadalajara/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-guadalajara/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "albacete": {
-      "label": "Albacete (Provincia)",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/albacete-provincia/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/albacete/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-albacete/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "castellon": {
-      "label": "Castellon (Provincia)",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/castellon-provincia/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/castellon/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-castellon_castello/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "badajoz": {
-      "label": "Badajoz (Provincia)",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/badajoz-provincia/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/badajoz/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-badajoz/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "caceres": {
-      "label": "Caceres (Provincia)",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/caceres-provincia/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/caceres/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-caceres/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "girona": {
-      "label": "Girona (Provincia)",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/girona-provincia/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/girona/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-girona/",
-        "habitaclia": "https://www.habitaclia.com/viviendas-en-venta-girona.htm",
-        "casaradar": null
-      }
-    },
-    "tarragona": {
-      "label": "Tarragona (Provincia)",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/tarragona-provincia/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/tarragona/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-tarragona/",
-        "habitaclia": "https://www.habitaclia.com/viviendas-en-venta-tarragona.htm",
-        "casaradar": null
-      }
-    },
-    "lleida": {
-      "label": "Lleida (Provincia)",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/lleida-provincia/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/lleida/todas-las-zonas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-lleida/",
-        "habitaclia": "https://www.habitaclia.com/viviendas-en-venta-lleida.htm",
-        "casaradar": null
-      }
-    },
-    "barcelona-ciutat-vella": {
-      "label": "Barcelona - Ciutat Vella",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/barcelona/ciutat-vella/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/barcelona-capital/ciutat-vella/l",
-        "pisos": "https://www.pisos.com/venta/pisos-ciutat_vella-barcelona/",
-        "habitaclia": "https://www.habitaclia.com/viviendas-distrito_ciutat_vella-barcelona.htm",
-        "casaradar": null
-      }
-    },
-    "barcelona-eixample": {
-      "label": "Barcelona - Eixample",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/barcelona/eixample/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/barcelona-capital/eixample/l",
-        "pisos": "https://www.pisos.com/venta/pisos-eixample-barcelona/",
-        "habitaclia": "https://www.habitaclia.com/viviendas-distrito_eixample-barcelona.htm",
-        "casaradar": null
-      }
-    },
-    "barcelona-gracia": {
-      "label": "Barcelona - Gracia",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/barcelona/gracia/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/barcelona-capital/gracia/l",
-        "pisos": "https://www.pisos.com/venta/pisos-gracia-barcelona/",
-        "habitaclia": "https://www.habitaclia.com/viviendas-distrito_gracia-barcelona.htm",
-        "casaradar": null
-      }
-    },
-    "barcelona-horta-guinardo": {
-      "label": "Barcelona - Horta-Guinardo",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/barcelona/horta-guinardo/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/barcelona-capital/horta-guinardo/l",
-        "pisos": "https://www.pisos.com/venta/pisos-horta_guinardo-barcelona/",
-        "habitaclia": "https://www.habitaclia.com/viviendas-distrito_horta_guinardo-barcelona.htm",
-        "casaradar": null
-      }
-    },
-    "barcelona-les-corts": {
-      "label": "Barcelona - Les Corts",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/barcelona/les-corts/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/barcelona-capital/les-corts/l",
-        "pisos": "https://www.pisos.com/venta/pisos-les_corts-barcelona/",
-        "habitaclia": "https://www.habitaclia.com/viviendas-distrito_les_corts-barcelona.htm",
-        "casaradar": null
-      }
-    },
-    "barcelona-nou-barris": {
-      "label": "Barcelona - Nou Barris",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/barcelona/nou-barris/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/barcelona-capital/nou-barris/l",
-        "pisos": "https://www.pisos.com/venta/pisos-nou_barris-barcelona/",
-        "habitaclia": "https://www.habitaclia.com/viviendas-distrito_nou_barris-barcelona.htm",
-        "casaradar": null
-      }
-    },
-    "barcelona-sant-andreu": {
-      "label": "Barcelona - Sant Andreu",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/barcelona/sant-andreu/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/barcelona-capital/sant-andreu/l",
-        "pisos": "https://www.pisos.com/venta/pisos-sant_andreu-barcelona/",
-        "habitaclia": "https://www.habitaclia.com/viviendas-distrito_sant_andreu-barcelona.htm",
-        "casaradar": null
-      }
-    },
-    "barcelona-sant-marti": {
-      "label": "Barcelona - Sant Marti / Poblenou",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/barcelona/sant-marti/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/barcelona-capital/sant-marti/l",
-        "pisos": "https://www.pisos.com/venta/pisos-sant_marti-barcelona/",
-        "habitaclia": "https://www.habitaclia.com/viviendas-distrito_sant_marti-barcelona.htm",
-        "casaradar": null
-      }
-    },
-    "barcelona-sants-montjuic": {
-      "label": "Barcelona - Sants-Montjuic",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/barcelona/sants-montjuic/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/barcelona-capital/sants-montjuic/l",
-        "pisos": "https://www.pisos.com/venta/pisos-sants_montjuic-barcelona/",
-        "habitaclia": "https://www.habitaclia.com/viviendas-distrito_sants_montjuic-barcelona.htm",
-        "casaradar": null
-      }
-    },
-    "barcelona-sarria-sant-gervasi": {
-      "label": "Barcelona - Sarria-Sant Gervasi",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/barcelona/sarria-sant-gervasi/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/barcelona-capital/sarria-sant-gervasi/l",
-        "pisos": "https://www.pisos.com/venta/pisos-sarria_sant_gervasi-barcelona/",
-        "habitaclia": "https://www.habitaclia.com/viviendas-distrito_sarria_sant_gervasi-barcelona.htm",
-        "casaradar": null
-      }
-    },
-    "madrid-arganzuela": {
-      "label": "Madrid - Arganzuela",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/madrid-capital/arganzuela/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/madrid-capital/arganzuela/l",
-        "pisos": "https://www.pisos.com/venta/pisos-arganzuela-madrid/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "madrid-barajas": {
-      "label": "Madrid - Barajas",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/madrid-capital/barajas/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/madrid-capital/barajas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-barajas-madrid/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "madrid-carabanchel": {
-      "label": "Madrid - Carabanchel",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/madrid-capital/carabanchel/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/madrid-capital/carabanchel/l",
-        "pisos": "https://www.pisos.com/venta/pisos-carabanchel-madrid/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "madrid-centro": {
-      "label": "Madrid - Centro",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/madrid-capital/centro/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/madrid-capital/centro/l",
-        "pisos": "https://www.pisos.com/venta/pisos-centro-madrid/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "madrid-chamartin": {
-      "label": "Madrid - Chamartin",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/madrid-capital/chamartin/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/madrid-capital/chamartin/l",
-        "pisos": "https://www.pisos.com/venta/pisos-chamartin-madrid/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "madrid-chamberi": {
-      "label": "Madrid - Chamberi",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/madrid-capital/chamberi/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/madrid-capital/chamberi/l",
-        "pisos": "https://www.pisos.com/venta/pisos-chamberi-madrid/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "madrid-ciudad-lineal": {
-      "label": "Madrid - Ciudad Lineal",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/madrid-capital/ciudad-lineal/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/madrid-capital/ciudad-lineal/l",
-        "pisos": "https://www.pisos.com/venta/pisos-ciudad_lineal-madrid/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "madrid-fuencarral": {
-      "label": "Madrid - Fuencarral-El Pardo",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/madrid-capital/fuencarral-el-pardo/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/madrid-capital/fuencarral-el-pardo/l",
-        "pisos": "https://www.pisos.com/venta/pisos-fuencarral_el_pardo-madrid/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "madrid-hortaleza": {
-      "label": "Madrid - Hortaleza",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/madrid-capital/hortaleza/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/madrid-capital/hortaleza/l",
-        "pisos": "https://www.pisos.com/venta/pisos-hortaleza-madrid/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "madrid-latina": {
-      "label": "Madrid - Latina",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/madrid-capital/latina/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/madrid-capital/latina/l",
-        "pisos": "https://www.pisos.com/venta/pisos-latina-madrid/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "madrid-moncloa": {
-      "label": "Madrid - Moncloa-Aravaca",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/madrid-capital/moncloa-aravaca/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/madrid-capital/moncloa-aravaca/l",
-        "pisos": "https://www.pisos.com/venta/pisos-moncloa_aravaca-madrid/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "madrid-moratalaz": {
-      "label": "Madrid - Moratalaz",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/madrid-capital/moratalaz/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/madrid-capital/moratalaz/l",
-        "pisos": "https://www.pisos.com/venta/pisos-moratalaz-madrid/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "madrid-puente-vallecas": {
-      "label": "Madrid - Puente de Vallecas",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/madrid-capital/puente-de-vallecas/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/madrid-capital/puente-de-vallecas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-puente_de_vallecas-madrid/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "madrid-retiro": {
-      "label": "Madrid - Retiro",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/madrid-capital/retiro/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/madrid-capital/retiro/l",
-        "pisos": "https://www.pisos.com/venta/pisos-retiro-madrid/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "madrid-salamanca": {
-      "label": "Madrid - Salamanca",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/madrid-capital/salamanca/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/madrid-capital/salamanca/l",
-        "pisos": "https://www.pisos.com/venta/pisos-salamanca-madrid/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "madrid-san-blas": {
-      "label": "Madrid - San Blas-Canillejas",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/madrid-capital/san-blas-canillejas/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/madrid-capital/san-blas-canillejas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-san_blas_canillejas-madrid/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "madrid-tetuan": {
-      "label": "Madrid - Tetuan",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/madrid-capital/tetuan/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/madrid-capital/tetuan/l",
-        "pisos": "https://www.pisos.com/venta/pisos-tetuan-madrid/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "madrid-usera": {
-      "label": "Madrid - Usera",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/madrid-capital/usera/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/madrid-capital/usera/l",
-        "pisos": "https://www.pisos.com/venta/pisos-usera-madrid/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "madrid-vicalvaro": {
-      "label": "Madrid - Vicalvaro",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/madrid-capital/vicalvaro/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/madrid-capital/vicalvaro/l",
-        "pisos": "https://www.pisos.com/venta/pisos-vicalvaro-madrid/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "madrid-villa-vallecas": {
-      "label": "Madrid - Villa de Vallecas",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/madrid-capital/villa-de-vallecas/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/madrid-capital/villa-de-vallecas/l",
-        "pisos": "https://www.pisos.com/venta/pisos-villa_de_vallecas-madrid/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    },
-    "madrid-villaverde": {
-      "label": "Madrid - Villaverde",
-      "portals": {
-        "idealista": "https://www.idealista.com/venta-viviendas/madrid-capital/villaverde/",
-        "fotocasa": "https://www.fotocasa.es/es/comprar/viviendas/madrid-capital/villaverde/l",
-        "pisos": "https://www.pisos.com/venta/pisos-villaverde-madrid/",
-        "habitaclia": null,
-        "casaradar": null
-      }
-    }
-  }
+﻿{
+    "_notes":  {
+                   "idealista_403":  "Idealista bloquea httpx sin stealth. Los slugs son correctos â€” el scraper usa StealthyFetcher.",
+                   "fotocasa_405":  "Provincias pequenas requieren stealth (405 es anti-bot). URLs estructuralmente correctas.",
+                   "habitaclia":  "Solo cubre Cataluna. Urls verificadas manualmente.",
+                   "pisos_slugs":  "Pisos.com usa nombre directo sin \u0027provincia_de_\u0027. Bilinguismo: guipuzcoa_gipuzkoa, castellon_castello."
+               },
+    "zones":  {
+                  "madrid-capital":  {
+                                         "label":  "Madrid - Capital",
+                                         "portals":  {
+                                                         "idealista":  "https://www.idealista.com/venta-viviendas/madrid-capital/",
+                                                         "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/madrid-capital/todas-las-zonas/l",
+                                                         "pisos":  "https://www.pisos.com/venta/pisos-madrid/",
+                                                         "habitaclia":  null
+                                                     }
+                                     },
+                  "madrid-provincia":  {
+                                           "label":  "Madrid - Resto de la Comunidad",
+                                           "portals":  {
+                                                           "idealista":  "https://www.idealista.com/venta-viviendas/madrid-provincia/",
+                                                           "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/madrid-provincia/todas-las-zonas/l",
+                                                           "pisos":  null,
+                                                           "habitaclia":  null
+                                                       }
+                                       },
+                  "barcelona-capital":  {
+                                            "label":  "Barcelona - Capital",
+                                            "portals":  {
+                                                            "idealista":  "https://www.idealista.com/venta-viviendas/barcelona/",
+                                                            "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/barcelona-capital/todas-las-zonas/l",
+                                                            "pisos":  "https://www.pisos.com/venta/pisos-barcelona/",
+                                                            "habitaclia":  "https://www.habitaclia.com/viviendas-en-venta-barcelona.htm"
+                                                        }
+                                        },
+                  "barcelona-provincia":  {
+                                              "label":  "Barcelona - Resto de la Provincia",
+                                              "portals":  {
+                                                              "idealista":  "https://www.idealista.com/venta-viviendas/barcelona-provincia/",
+                                                              "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/barcelona/todas-las-zonas/l",
+                                                              "pisos":  null,
+                                                              "habitaclia":  null
+                                                          }
+                                          },
+                  "valencia-capital":  {
+                                           "label":  "Valencia - Capital",
+                                           "portals":  {
+                                                           "idealista":  "https://www.idealista.com/venta-viviendas/valencia/",
+                                                           "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/valencia/todas-las-zonas/l",
+                                                           "pisos":  "https://www.pisos.com/venta/pisos-valencia/",
+                                                           "habitaclia":  null
+                                                       }
+                                       },
+                  "valencia-provincia":  {
+                                             "label":  "Valencia - Resto de la Provincia",
+                                             "portals":  {
+                                                             "idealista":  "https://www.idealista.com/venta-viviendas/valencia-provincia/",
+                                                             "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/comunidad-valenciana/todas-las-zonas/l",
+                                                             "pisos":  null,
+                                                             "habitaclia":  null
+                                                         }
+                                         },
+                  "alicante":  {
+                                   "label":  "Alicante / Costa Blanca",
+                                   "portals":  {
+                                                   "idealista":  "https://www.idealista.com/venta-viviendas/alicante-provincia/",
+                                                   "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/alicante/todas-las-zonas/l",
+                                                   "pisos":  "https://www.pisos.com/venta/pisos-alicante/",
+                                                   "habitaclia":  null
+                                               }
+                               },
+                  "malaga":  {
+                                 "label":  "Malaga / Costa del Sol",
+                                 "portals":  {
+                                                 "idealista":  "https://www.idealista.com/venta-viviendas/malaga-provincia/",
+                                                 "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/malaga/todas-las-zonas/l",
+                                                 "pisos":  "https://www.pisos.com/venta/pisos-malaga/",
+                                                 "habitaclia":  null
+                                             }
+                             },
+                  "sevilla":  {
+                                  "label":  "Sevilla (Provincia completa)",
+                                  "portals":  {
+                                                  "idealista":  "https://www.idealista.com/venta-viviendas/sevilla-provincia/",
+                                                  "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/sevilla/todas-las-zonas/l",
+                                                  "pisos":  "https://www.pisos.com/venta/pisos-sevilla/",
+                                                  "habitaclia":  null
+                                              }
+                              },
+                  "murcia":  {
+                                 "label":  "Murcia (Provincia completa)",
+                                 "portals":  {
+                                                 "idealista":  "https://www.idealista.com/venta-viviendas/murcia-provincia/",
+                                                 "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/murcia/todas-las-zonas/l",
+                                                 "pisos":  "https://www.pisos.com/venta/pisos-murcia/",
+                                                 "habitaclia":  null
+                                             }
+                             },
+                  "baleares":  {
+                                   "label":  "Islas Baleares (Mallorca, Ibiza, Menorca)",
+                                   "portals":  {
+                                                   "idealista":  "https://www.idealista.com/venta-viviendas/baleares/",
+                                                   "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/baleares/todas-las-zonas/l",
+                                                   "pisos":  "https://www.pisos.com/venta/pisos-baleares/",
+                                                   "habitaclia":  null
+                                               }
+                               },
+                  "las-palmas":  {
+                                     "label":  "Islas Canarias - Las Palmas",
+                                     "portals":  {
+                                                     "idealista":  "https://www.idealista.com/venta-viviendas/las-palmas/",
+                                                     "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/las-palmas/todas-las-zonas/l",
+                                                     "pisos":  "https://www.pisos.com/venta/pisos-las_palmas/",
+                                                     "habitaclia":  null
+                                                 }
+                                 },
+                  "tenerife":  {
+                                   "label":  "Islas Canarias - Tenerife",
+                                   "portals":  {
+                                                   "idealista":  "https://www.idealista.com/venta-viviendas/santa-cruz-de-tenerife/",
+                                                   "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/santa-cruz-de-tenerife/todas-las-zonas/l",
+                                                   "pisos":  "https://www.pisos.com/venta/pisos-santa_cruz_de_tenerife/",
+                                                   "habitaclia":  null
+                                               }
+                               },
+                  "cadiz":  {
+                                "label":  "Cadiz (Costa de la Luz)",
+                                "portals":  {
+                                                "idealista":  "https://www.idealista.com/venta-viviendas/cadiz-provincia/",
+                                                "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/cadiz/todas-las-zonas/l",
+                                                "pisos":  "https://www.pisos.com/venta/pisos-cadiz/",
+                                                "habitaclia":  null
+                                            }
+                            },
+                  "huelva":  {
+                                 "label":  "Huelva (Provincia)",
+                                 "portals":  {
+                                                 "idealista":  "https://www.idealista.com/venta-viviendas/huelva-provincia/",
+                                                 "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/huelva/todas-las-zonas/l",
+                                                 "pisos":  "https://www.pisos.com/venta/pisos-huelva/",
+                                                 "habitaclia":  null
+                                             }
+                             },
+                  "cordoba":  {
+                                  "label":  "Cordoba (Provincia)",
+                                  "portals":  {
+                                                  "idealista":  "https://www.idealista.com/venta-viviendas/cordoba-provincia/",
+                                                  "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/cordoba/todas-las-zonas/l",
+                                                  "pisos":  "https://www.pisos.com/venta/pisos-cordoba/",
+                                                  "habitaclia":  null
+                                              }
+                              },
+                  "jaen":  {
+                               "label":  "Jaen (Provincia)",
+                               "portals":  {
+                                               "idealista":  "https://www.idealista.com/venta-viviendas/jaen-provincia/",
+                                               "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/jaen/todas-las-zonas/l",
+                                               "pisos":  "https://www.pisos.com/venta/pisos-jaen/",
+                                               "habitaclia":  null
+                                           }
+                           },
+                  "granada":  {
+                                  "label":  "Granada (Provincia)",
+                                  "portals":  {
+                                                  "idealista":  "https://www.idealista.com/venta-viviendas/granada-provincia/",
+                                                  "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/granada/todas-las-zonas/l",
+                                                  "pisos":  "https://www.pisos.com/venta/pisos-granada/",
+                                                  "habitaclia":  null
+                                              }
+                              },
+                  "almeria":  {
+                                  "label":  "Almeria (Provincia)",
+                                  "portals":  {
+                                                  "idealista":  "https://www.idealista.com/venta-viviendas/almeria-provincia/",
+                                                  "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/almeria/todas-las-zonas/l",
+                                                  "pisos":  "https://www.pisos.com/venta/pisos-almeria/",
+                                                  "habitaclia":  null
+                                              }
+                              },
+                  "zaragoza":  {
+                                   "label":  "Zaragoza (Provincia)",
+                                   "portals":  {
+                                                   "idealista":  "https://www.idealista.com/venta-viviendas/zaragoza-provincia/",
+                                                   "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/zaragoza/todas-las-zonas/l",
+                                                   "pisos":  "https://www.pisos.com/venta/pisos-zaragoza/",
+                                                   "habitaclia":  null
+                                               }
+                               },
+                  "huesca":  {
+                                 "label":  "Huesca (Provincia)",
+                                 "portals":  {
+                                                 "idealista":  "https://www.idealista.com/venta-viviendas/huesca-provincia/",
+                                                 "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/huesca/todas-las-zonas/l",
+                                                 "pisos":  "https://www.pisos.com/venta/pisos-huesca/",
+                                                 "habitaclia":  null
+                                             }
+                             },
+                  "teruel":  {
+                                 "label":  "Teruel (Provincia)",
+                                 "portals":  {
+                                                 "idealista":  "https://www.idealista.com/venta-viviendas/teruel-provincia/",
+                                                 "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/teruel/todas-las-zonas/l",
+                                                 "pisos":  "https://www.pisos.com/venta/pisos-teruel/",
+                                                 "habitaclia":  null
+                                             }
+                             },
+                  "vizcaya":  {
+                                  "label":  "Vizcaya / Bilbao",
+                                  "portals":  {
+                                                  "idealista":  "https://www.idealista.com/venta-viviendas/vizcaya/",
+                                                  "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/vizcaya/todas-las-zonas/l",
+                                                  "pisos":  "https://www.pisos.com/venta/pisos-vizcaya/",
+                                                  "habitaclia":  null
+                                              }
+                              },
+                  "guipuzcoa":  {
+                                    "label":  "Guipuzcoa / San Sebastian",
+                                    "portals":  {
+                                                    "idealista":  "https://www.idealista.com/venta-viviendas/guipuzcoa/",
+                                                    "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/guipuzcoa/todas-las-zonas/l",
+                                                    "pisos":  "https://www.pisos.com/venta/pisos-guipuzcoa_gipuzkoa/",
+                                                    "habitaclia":  null
+                                                }
+                                },
+                  "alava":  {
+                                "label":  "Alava / Vitoria",
+                                "portals":  {
+                                                "idealista":  "https://www.idealista.com/venta-viviendas/alava/",
+                                                "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/alava/todas-las-zonas/l",
+                                                "pisos":  "https://www.pisos.com/venta/pisos-alava/",
+                                                "habitaclia":  null
+                                            }
+                            },
+                  "a-coruna":  {
+                                   "label":  "A Coruna (Provincia)",
+                                   "portals":  {
+                                                   "idealista":  "https://www.idealista.com/venta-viviendas/a-coruna-provincia/",
+                                                   "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/a-coruna/todas-las-zonas/l",
+                                                   "pisos":  "https://www.pisos.com/venta/pisos-a_coruna/",
+                                                   "habitaclia":  null
+                                               }
+                               },
+                  "pontevedra":  {
+                                     "label":  "Pontevedra (Provincia)",
+                                     "portals":  {
+                                                     "idealista":  "https://www.idealista.com/venta-viviendas/pontevedra-provincia/",
+                                                     "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/pontevedra/todas-las-zonas/l",
+                                                     "pisos":  "https://www.pisos.com/venta/pisos-pontevedra/",
+                                                     "habitaclia":  null
+                                                 }
+                                 },
+                  "lugo":  {
+                               "label":  "Lugo (Provincia)",
+                               "portals":  {
+                                               "idealista":  "https://www.idealista.com/venta-viviendas/lugo-provincia/",
+                                               "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/lugo/todas-las-zonas/l",
+                                               "pisos":  "https://www.pisos.com/venta/pisos-lugo/",
+                                               "habitaclia":  null
+                                           }
+                           },
+                  "ourense":  {
+                                  "label":  "Ourense (Provincia)",
+                                  "portals":  {
+                                                  "idealista":  "https://www.idealista.com/venta-viviendas/ourense-provincia/",
+                                                  "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/ourense/todas-las-zonas/l",
+                                                  "pisos":  "https://www.pisos.com/venta/pisos-ourense/",
+                                                  "habitaclia":  null
+                                              }
+                              },
+                  "asturias":  {
+                                   "label":  "Asturias",
+                                   "portals":  {
+                                                   "idealista":  "https://www.idealista.com/venta-viviendas/asturias/",
+                                                   "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/asturias/todas-las-zonas/l",
+                                                   "pisos":  "https://www.pisos.com/venta/pisos-asturias/",
+                                                   "habitaclia":  null
+                                               }
+                               },
+                  "cantabria":  {
+                                    "label":  "Cantabria",
+                                    "portals":  {
+                                                    "idealista":  "https://www.idealista.com/venta-viviendas/cantabria/",
+                                                    "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/cantabria/todas-las-zonas/l",
+                                                    "pisos":  "https://www.pisos.com/venta/pisos-cantabria/",
+                                                    "habitaclia":  null
+                                                }
+                                },
+                  "navarra":  {
+                                  "label":  "Navarra",
+                                  "portals":  {
+                                                  "idealista":  "https://www.idealista.com/venta-viviendas/navarra/",
+                                                  "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/navarra/todas-las-zonas/l",
+                                                  "pisos":  "https://www.pisos.com/venta/pisos-navarra/",
+                                                  "habitaclia":  null
+                                              }
+                              },
+                  "la-rioja":  {
+                                   "label":  "La Rioja",
+                                   "portals":  {
+                                                   "idealista":  "https://www.idealista.com/venta-viviendas/la-rioja/",
+                                                   "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/la-rioja/todas-las-zonas/l",
+                                                   "pisos":  "https://www.pisos.com/venta/pisos-la_rioja/",
+                                                   "habitaclia":  null
+                                               }
+                               },
+                  "valladolid":  {
+                                     "label":  "Valladolid (Provincia)",
+                                     "portals":  {
+                                                     "idealista":  "https://www.idealista.com/venta-viviendas/valladolid-provincia/",
+                                                     "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/valladolid/todas-las-zonas/l",
+                                                     "pisos":  "https://www.pisos.com/venta/pisos-valladolid/",
+                                                     "habitaclia":  null
+                                                 }
+                                 },
+                  "burgos":  {
+                                 "label":  "Burgos (Provincia)",
+                                 "portals":  {
+                                                 "idealista":  "https://www.idealista.com/venta-viviendas/burgos-provincia/",
+                                                 "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/burgos/todas-las-zonas/l",
+                                                 "pisos":  "https://www.pisos.com/venta/pisos-burgos/",
+                                                 "habitaclia":  null
+                                             }
+                             },
+                  "leon":  {
+                               "label":  "Leon (Provincia)",
+                               "portals":  {
+                                               "idealista":  "https://www.idealista.com/venta-viviendas/leon-provincia/",
+                                               "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/leon/todas-las-zonas/l",
+                                               "pisos":  "https://www.pisos.com/venta/pisos-leon/",
+                                               "habitaclia":  null
+                                           }
+                           },
+                  "salamanca":  {
+                                    "label":  "Salamanca (Provincia)",
+                                    "portals":  {
+                                                    "idealista":  "https://www.idealista.com/venta-viviendas/salamanca-provincia/",
+                                                    "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/salamanca/todas-las-zonas/l",
+                                                    "pisos":  "https://www.pisos.com/venta/pisos-salamanca/",
+                                                    "habitaclia":  null
+                                                }
+                                },
+                  "zamora":  {
+                                 "label":  "Zamora (Provincia)",
+                                 "portals":  {
+                                                 "idealista":  "https://www.idealista.com/venta-viviendas/zamora-provincia/",
+                                                 "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/zamora/todas-las-zonas/l",
+                                                 "pisos":  "https://www.pisos.com/venta/pisos-zamora/",
+                                                 "habitaclia":  null
+                                             }
+                             },
+                  "avila":  {
+                                "label":  "Avila (Provincia)",
+                                "portals":  {
+                                                "idealista":  "https://www.idealista.com/venta-viviendas/avila-provincia/",
+                                                "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/avila/todas-las-zonas/l",
+                                                "pisos":  "https://www.pisos.com/venta/pisos-avila/",
+                                                "habitaclia":  null
+                                            }
+                            },
+                  "segovia":  {
+                                  "label":  "Segovia (Provincia)",
+                                  "portals":  {
+                                                  "idealista":  "https://www.idealista.com/venta-viviendas/segovia-provincia/",
+                                                  "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/segovia/todas-las-zonas/l",
+                                                  "pisos":  "https://www.pisos.com/venta/pisos-segovia/",
+                                                  "habitaclia":  null
+                                              }
+                              },
+                  "palencia":  {
+                                   "label":  "Palencia (Provincia)",
+                                   "portals":  {
+                                                   "idealista":  "https://www.idealista.com/venta-viviendas/palencia-provincia/",
+                                                   "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/palencia/todas-las-zonas/l",
+                                                   "pisos":  "https://www.pisos.com/venta/pisos-palencia/",
+                                                   "habitaclia":  null
+                                               }
+                               },
+                  "soria":  {
+                                "label":  "Soria (Provincia)",
+                                "portals":  {
+                                                "idealista":  "https://www.idealista.com/venta-viviendas/soria-provincia/",
+                                                "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/soria/todas-las-zonas/l",
+                                                "pisos":  "https://www.pisos.com/venta/pisos-soria/",
+                                                "habitaclia":  null
+                                            }
+                            },
+                  "toledo":  {
+                                 "label":  "Toledo (Provincia)",
+                                 "portals":  {
+                                                 "idealista":  "https://www.idealista.com/venta-viviendas/toledo-provincia/",
+                                                 "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/toledo/todas-las-zonas/l",
+                                                 "pisos":  "https://www.pisos.com/venta/pisos-toledo/",
+                                                 "habitaclia":  null
+                                             }
+                             },
+                  "ciudad-real":  {
+                                      "label":  "Ciudad Real (Provincia)",
+                                      "portals":  {
+                                                      "idealista":  "https://www.idealista.com/venta-viviendas/ciudad-real-provincia/",
+                                                      "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/ciudad-real/todas-las-zonas/l",
+                                                      "pisos":  "https://www.pisos.com/venta/pisos-ciudad_real/",
+                                                      "habitaclia":  null
+                                                  }
+                                  },
+                  "cuenca":  {
+                                 "label":  "Cuenca (Provincia)",
+                                 "portals":  {
+                                                 "idealista":  "https://www.idealista.com/venta-viviendas/cuenca-provincia/",
+                                                 "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/cuenca/todas-las-zonas/l",
+                                                 "pisos":  "https://www.pisos.com/venta/pisos-cuenca/",
+                                                 "habitaclia":  null
+                                             }
+                             },
+                  "guadalajara":  {
+                                      "label":  "Guadalajara (Provincia)",
+                                      "portals":  {
+                                                      "idealista":  "https://www.idealista.com/venta-viviendas/guadalajara-provincia/",
+                                                      "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/guadalajara/todas-las-zonas/l",
+                                                      "pisos":  "https://www.pisos.com/venta/pisos-guadalajara/",
+                                                      "habitaclia":  null
+                                                  }
+                                  },
+                  "albacete":  {
+                                   "label":  "Albacete (Provincia)",
+                                   "portals":  {
+                                                   "idealista":  "https://www.idealista.com/venta-viviendas/albacete-provincia/",
+                                                   "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/albacete/todas-las-zonas/l",
+                                                   "pisos":  "https://www.pisos.com/venta/pisos-albacete/",
+                                                   "habitaclia":  null
+                                               }
+                               },
+                  "castellon":  {
+                                    "label":  "Castellon (Provincia)",
+                                    "portals":  {
+                                                    "idealista":  "https://www.idealista.com/venta-viviendas/castellon-provincia/",
+                                                    "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/castellon/todas-las-zonas/l",
+                                                    "pisos":  "https://www.pisos.com/venta/pisos-castellon_castello/",
+                                                    "habitaclia":  null
+                                                }
+                                },
+                  "badajoz":  {
+                                  "label":  "Badajoz (Provincia)",
+                                  "portals":  {
+                                                  "idealista":  "https://www.idealista.com/venta-viviendas/badajoz-provincia/",
+                                                  "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/badajoz/todas-las-zonas/l",
+                                                  "pisos":  "https://www.pisos.com/venta/pisos-badajoz/",
+                                                  "habitaclia":  null
+                                              }
+                              },
+                  "caceres":  {
+                                  "label":  "Caceres (Provincia)",
+                                  "portals":  {
+                                                  "idealista":  "https://www.idealista.com/venta-viviendas/caceres-provincia/",
+                                                  "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/caceres/todas-las-zonas/l",
+                                                  "pisos":  "https://www.pisos.com/venta/pisos-caceres/",
+                                                  "habitaclia":  null
+                                              }
+                              },
+                  "girona":  {
+                                 "label":  "Girona (Provincia)",
+                                 "portals":  {
+                                                 "idealista":  "https://www.idealista.com/venta-viviendas/girona-provincia/",
+                                                 "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/girona/todas-las-zonas/l",
+                                                 "pisos":  "https://www.pisos.com/venta/pisos-girona/",
+                                                 "habitaclia":  "https://www.habitaclia.com/viviendas-en-venta-girona.htm"
+                                             }
+                             },
+                  "tarragona":  {
+                                    "label":  "Tarragona (Provincia)",
+                                    "portals":  {
+                                                    "idealista":  "https://www.idealista.com/venta-viviendas/tarragona-provincia/",
+                                                    "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/tarragona/todas-las-zonas/l",
+                                                    "pisos":  "https://www.pisos.com/venta/pisos-tarragona/",
+                                                    "habitaclia":  "https://www.habitaclia.com/viviendas-en-venta-tarragona.htm"
+                                                }
+                                },
+                  "lleida":  {
+                                 "label":  "Lleida (Provincia)",
+                                 "portals":  {
+                                                 "idealista":  "https://www.idealista.com/venta-viviendas/lleida-provincia/",
+                                                 "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/lleida/todas-las-zonas/l",
+                                                 "pisos":  "https://www.pisos.com/venta/pisos-lleida/",
+                                                 "habitaclia":  "https://www.habitaclia.com/viviendas-en-venta-lleida.htm"
+                                             }
+                             },
+                  "barcelona-ciutat-vella":  {
+                                                 "label":  "Barcelona - Ciutat Vella",
+                                                 "portals":  {
+                                                                 "idealista":  "https://www.idealista.com/venta-viviendas/barcelona/ciutat-vella/",
+                                                                 "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/barcelona-capital/ciutat-vella/l",
+                                                                 "pisos":  "https://www.pisos.com/venta/pisos-ciutat_vella-barcelona/",
+                                                                 "habitaclia":  "https://www.habitaclia.com/viviendas-distrito_ciutat_vella-barcelona.htm"
+                                                             }
+                                             },
+                  "barcelona-eixample":  {
+                                             "label":  "Barcelona - Eixample",
+                                             "portals":  {
+                                                             "idealista":  "https://www.idealista.com/venta-viviendas/barcelona/eixample/",
+                                                             "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/barcelona-capital/eixample/l",
+                                                             "pisos":  "https://www.pisos.com/venta/pisos-eixample-barcelona/",
+                                                             "habitaclia":  "https://www.habitaclia.com/viviendas-distrito_eixample-barcelona.htm"
+                                                         }
+                                         },
+                  "barcelona-gracia":  {
+                                           "label":  "Barcelona - Gracia",
+                                           "portals":  {
+                                                           "idealista":  "https://www.idealista.com/venta-viviendas/barcelona/gracia/",
+                                                           "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/barcelona-capital/gracia/l",
+                                                           "pisos":  "https://www.pisos.com/venta/pisos-gracia-barcelona/",
+                                                           "habitaclia":  "https://www.habitaclia.com/viviendas-distrito_gracia-barcelona.htm"
+                                                       }
+                                       },
+                  "barcelona-horta-guinardo":  {
+                                                   "label":  "Barcelona - Horta-Guinardo",
+                                                   "portals":  {
+                                                                   "idealista":  "https://www.idealista.com/venta-viviendas/barcelona/horta-guinardo/",
+                                                                   "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/barcelona-capital/horta-guinardo/l",
+                                                                   "pisos":  "https://www.pisos.com/venta/pisos-horta_guinardo-barcelona/",
+                                                                   "habitaclia":  "https://www.habitaclia.com/viviendas-distrito_horta_guinardo-barcelona.htm"
+                                                               }
+                                               },
+                  "barcelona-les-corts":  {
+                                              "label":  "Barcelona - Les Corts",
+                                              "portals":  {
+                                                              "idealista":  "https://www.idealista.com/venta-viviendas/barcelona/les-corts/",
+                                                              "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/barcelona-capital/les-corts/l",
+                                                              "pisos":  "https://www.pisos.com/venta/pisos-les_corts-barcelona/",
+                                                              "habitaclia":  "https://www.habitaclia.com/viviendas-distrito_les_corts-barcelona.htm"
+                                                          }
+                                          },
+                  "barcelona-nou-barris":  {
+                                               "label":  "Barcelona - Nou Barris",
+                                               "portals":  {
+                                                               "idealista":  "https://www.idealista.com/venta-viviendas/barcelona/nou-barris/",
+                                                               "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/barcelona-capital/nou-barris/l",
+                                                               "pisos":  "https://www.pisos.com/venta/pisos-nou_barris-barcelona/",
+                                                               "habitaclia":  "https://www.habitaclia.com/viviendas-distrito_nou_barris-barcelona.htm"
+                                                           }
+                                           },
+                  "barcelona-sant-andreu":  {
+                                                "label":  "Barcelona - Sant Andreu",
+                                                "portals":  {
+                                                                "idealista":  "https://www.idealista.com/venta-viviendas/barcelona/sant-andreu/",
+                                                                "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/barcelona-capital/sant-andreu/l",
+                                                                "pisos":  "https://www.pisos.com/venta/pisos-sant_andreu-barcelona/",
+                                                                "habitaclia":  "https://www.habitaclia.com/viviendas-distrito_sant_andreu-barcelona.htm"
+                                                            }
+                                            },
+                  "barcelona-sant-marti":  {
+                                               "label":  "Barcelona - Sant Marti / Poblenou",
+                                               "portals":  {
+                                                               "idealista":  "https://www.idealista.com/venta-viviendas/barcelona/sant-marti/",
+                                                               "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/barcelona-capital/sant-marti/l",
+                                                               "pisos":  "https://www.pisos.com/venta/pisos-sant_marti-barcelona/",
+                                                               "habitaclia":  "https://www.habitaclia.com/viviendas-distrito_sant_marti-barcelona.htm"
+                                                           }
+                                           },
+                  "barcelona-sants-montjuic":  {
+                                                   "label":  "Barcelona - Sants-Montjuic",
+                                                   "portals":  {
+                                                                   "idealista":  "https://www.idealista.com/venta-viviendas/barcelona/sants-montjuic/",
+                                                                   "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/barcelona-capital/sants-montjuic/l",
+                                                                   "pisos":  "https://www.pisos.com/venta/pisos-sants_montjuic-barcelona/",
+                                                                   "habitaclia":  "https://www.habitaclia.com/viviendas-distrito_sants_montjuic-barcelona.htm"
+                                                               }
+                                               },
+                  "barcelona-sarria-sant-gervasi":  {
+                                                        "label":  "Barcelona - Sarria-Sant Gervasi",
+                                                        "portals":  {
+                                                                        "idealista":  "https://www.idealista.com/venta-viviendas/barcelona/sarria-sant-gervasi/",
+                                                                        "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/barcelona-capital/sarria-sant-gervasi/l",
+                                                                        "pisos":  "https://www.pisos.com/venta/pisos-sarria_sant_gervasi-barcelona/",
+                                                                        "habitaclia":  "https://www.habitaclia.com/viviendas-distrito_sarria_sant_gervasi-barcelona.htm"
+                                                                    }
+                                                    },
+                  "madrid-arganzuela":  {
+                                            "label":  "Madrid - Arganzuela",
+                                            "portals":  {
+                                                            "idealista":  "https://www.idealista.com/venta-viviendas/madrid-capital/arganzuela/",
+                                                            "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/madrid-capital/arganzuela/l",
+                                                            "pisos":  "https://www.pisos.com/venta/pisos-arganzuela-madrid/",
+                                                            "habitaclia":  null
+                                                        }
+                                        },
+                  "madrid-barajas":  {
+                                         "label":  "Madrid - Barajas",
+                                         "portals":  {
+                                                         "idealista":  "https://www.idealista.com/venta-viviendas/madrid-capital/barajas/",
+                                                         "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/madrid-capital/barajas/l",
+                                                         "pisos":  "https://www.pisos.com/venta/pisos-barajas-madrid/",
+                                                         "habitaclia":  null
+                                                     }
+                                     },
+                  "madrid-carabanchel":  {
+                                             "label":  "Madrid - Carabanchel",
+                                             "portals":  {
+                                                             "idealista":  "https://www.idealista.com/venta-viviendas/madrid-capital/carabanchel/",
+                                                             "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/madrid-capital/carabanchel/l",
+                                                             "pisos":  "https://www.pisos.com/venta/pisos-carabanchel-madrid/",
+                                                             "habitaclia":  null
+                                                         }
+                                         },
+                  "madrid-centro":  {
+                                        "label":  "Madrid - Centro",
+                                        "portals":  {
+                                                        "idealista":  "https://www.idealista.com/venta-viviendas/madrid-capital/centro/",
+                                                        "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/madrid-capital/centro/l",
+                                                        "pisos":  "https://www.pisos.com/venta/pisos-centro-madrid/",
+                                                        "habitaclia":  null
+                                                    }
+                                    },
+                  "madrid-chamartin":  {
+                                           "label":  "Madrid - Chamartin",
+                                           "portals":  {
+                                                           "idealista":  "https://www.idealista.com/venta-viviendas/madrid-capital/chamartin/",
+                                                           "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/madrid-capital/chamartin/l",
+                                                           "pisos":  "https://www.pisos.com/venta/pisos-chamartin-madrid/",
+                                                           "habitaclia":  null
+                                                       }
+                                       },
+                  "madrid-chamberi":  {
+                                          "label":  "Madrid - Chamberi",
+                                          "portals":  {
+                                                          "idealista":  "https://www.idealista.com/venta-viviendas/madrid-capital/chamberi/",
+                                                          "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/madrid-capital/chamberi/l",
+                                                          "pisos":  "https://www.pisos.com/venta/pisos-chamberi-madrid/",
+                                                          "habitaclia":  null
+                                                      }
+                                      },
+                  "madrid-ciudad-lineal":  {
+                                               "label":  "Madrid - Ciudad Lineal",
+                                               "portals":  {
+                                                               "idealista":  "https://www.idealista.com/venta-viviendas/madrid-capital/ciudad-lineal/",
+                                                               "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/madrid-capital/ciudad-lineal/l",
+                                                               "pisos":  "https://www.pisos.com/venta/pisos-ciudad_lineal-madrid/",
+                                                               "habitaclia":  null
+                                                           }
+                                           },
+                  "madrid-fuencarral":  {
+                                            "label":  "Madrid - Fuencarral-El Pardo",
+                                            "portals":  {
+                                                            "idealista":  "https://www.idealista.com/venta-viviendas/madrid-capital/fuencarral-el-pardo/",
+                                                            "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/madrid-capital/fuencarral-el-pardo/l",
+                                                            "pisos":  "https://www.pisos.com/venta/pisos-fuencarral_el_pardo-madrid/",
+                                                            "habitaclia":  null
+                                                        }
+                                        },
+                  "madrid-hortaleza":  {
+                                           "label":  "Madrid - Hortaleza",
+                                           "portals":  {
+                                                           "idealista":  "https://www.idealista.com/venta-viviendas/madrid-capital/hortaleza/",
+                                                           "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/madrid-capital/hortaleza/l",
+                                                           "pisos":  "https://www.pisos.com/venta/pisos-hortaleza-madrid/",
+                                                           "habitaclia":  null
+                                                       }
+                                       },
+                  "madrid-latina":  {
+                                        "label":  "Madrid - Latina",
+                                        "portals":  {
+                                                        "idealista":  "https://www.idealista.com/venta-viviendas/madrid-capital/latina/",
+                                                        "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/madrid-capital/latina/l",
+                                                        "pisos":  "https://www.pisos.com/venta/pisos-latina-madrid/",
+                                                        "habitaclia":  null
+                                                    }
+                                    },
+                  "madrid-moncloa":  {
+                                         "label":  "Madrid - Moncloa-Aravaca",
+                                         "portals":  {
+                                                         "idealista":  "https://www.idealista.com/venta-viviendas/madrid-capital/moncloa-aravaca/",
+                                                         "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/madrid-capital/moncloa-aravaca/l",
+                                                         "pisos":  "https://www.pisos.com/venta/pisos-moncloa_aravaca-madrid/",
+                                                         "habitaclia":  null
+                                                     }
+                                     },
+                  "madrid-moratalaz":  {
+                                           "label":  "Madrid - Moratalaz",
+                                           "portals":  {
+                                                           "idealista":  "https://www.idealista.com/venta-viviendas/madrid-capital/moratalaz/",
+                                                           "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/madrid-capital/moratalaz/l",
+                                                           "pisos":  "https://www.pisos.com/venta/pisos-moratalaz-madrid/",
+                                                           "habitaclia":  null
+                                                       }
+                                       },
+                  "madrid-puente-vallecas":  {
+                                                 "label":  "Madrid - Puente de Vallecas",
+                                                 "portals":  {
+                                                                 "idealista":  "https://www.idealista.com/venta-viviendas/madrid-capital/puente-de-vallecas/",
+                                                                 "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/madrid-capital/puente-de-vallecas/l",
+                                                                 "pisos":  "https://www.pisos.com/venta/pisos-puente_de_vallecas-madrid/",
+                                                                 "habitaclia":  null
+                                                             }
+                                             },
+                  "madrid-retiro":  {
+                                        "label":  "Madrid - Retiro",
+                                        "portals":  {
+                                                        "idealista":  "https://www.idealista.com/venta-viviendas/madrid-capital/retiro/",
+                                                        "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/madrid-capital/retiro/l",
+                                                        "pisos":  "https://www.pisos.com/venta/pisos-retiro-madrid/",
+                                                        "habitaclia":  null
+                                                    }
+                                    },
+                  "madrid-salamanca":  {
+                                           "label":  "Madrid - Salamanca",
+                                           "portals":  {
+                                                           "idealista":  "https://www.idealista.com/venta-viviendas/madrid-capital/salamanca/",
+                                                           "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/madrid-capital/salamanca/l",
+                                                           "pisos":  "https://www.pisos.com/venta/pisos-salamanca-madrid/",
+                                                           "habitaclia":  null
+                                                       }
+                                       },
+                  "madrid-san-blas":  {
+                                          "label":  "Madrid - San Blas-Canillejas",
+                                          "portals":  {
+                                                          "idealista":  "https://www.idealista.com/venta-viviendas/madrid-capital/san-blas-canillejas/",
+                                                          "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/madrid-capital/san-blas-canillejas/l",
+                                                          "pisos":  "https://www.pisos.com/venta/pisos-san_blas_canillejas-madrid/",
+                                                          "habitaclia":  null
+                                                      }
+                                      },
+                  "madrid-tetuan":  {
+                                        "label":  "Madrid - Tetuan",
+                                        "portals":  {
+                                                        "idealista":  "https://www.idealista.com/venta-viviendas/madrid-capital/tetuan/",
+                                                        "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/madrid-capital/tetuan/l",
+                                                        "pisos":  "https://www.pisos.com/venta/pisos-tetuan-madrid/",
+                                                        "habitaclia":  null
+                                                    }
+                                    },
+                  "madrid-usera":  {
+                                       "label":  "Madrid - Usera",
+                                       "portals":  {
+                                                       "idealista":  "https://www.idealista.com/venta-viviendas/madrid-capital/usera/",
+                                                       "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/madrid-capital/usera/l",
+                                                       "pisos":  "https://www.pisos.com/venta/pisos-usera-madrid/",
+                                                       "habitaclia":  null
+                                                   }
+                                   },
+                  "madrid-vicalvaro":  {
+                                           "label":  "Madrid - Vicalvaro",
+                                           "portals":  {
+                                                           "idealista":  "https://www.idealista.com/venta-viviendas/madrid-capital/vicalvaro/",
+                                                           "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/madrid-capital/vicalvaro/l",
+                                                           "pisos":  "https://www.pisos.com/venta/pisos-vicalvaro-madrid/",
+                                                           "habitaclia":  null
+                                                       }
+                                       },
+                  "madrid-villa-vallecas":  {
+                                                "label":  "Madrid - Villa de Vallecas",
+                                                "portals":  {
+                                                                "idealista":  "https://www.idealista.com/venta-viviendas/madrid-capital/villa-de-vallecas/",
+                                                                "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/madrid-capital/villa-de-vallecas/l",
+                                                                "pisos":  "https://www.pisos.com/venta/pisos-villa_de_vallecas-madrid/",
+                                                                "habitaclia":  null
+                                                            }
+                                            },
+                  "madrid-villaverde":  {
+                                            "label":  "Madrid - Villaverde",
+                                            "portals":  {
+                                                            "idealista":  "https://www.idealista.com/venta-viviendas/madrid-capital/villaverde/",
+                                                            "fotocasa":  "https://www.fotocasa.es/es/comprar/viviendas/madrid-capital/villaverde/l",
+                                                            "pisos":  "https://www.pisos.com/venta/pisos-villaverde-madrid/",
+                                                            "habitaclia":  null
+                                                        }
+                                        }
+              }
 }
