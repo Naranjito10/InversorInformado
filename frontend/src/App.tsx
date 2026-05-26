@@ -5,7 +5,9 @@ import SearchForm from "./pages/SearchForm";
 import Monitor from "./pages/Monitor";
 import Review from "./pages/Review";
 import Carga from "./pages/Carga";
-import { fetchPendingReview } from "./services/api";
+import Login from "./pages/Login";
+import ProtectedRoute from "./components/ProtectedRoute";
+import { fetchPendingReview, logout } from "./services/api";
 
 function PendingBadge() {
   const { data } = useQuery({
@@ -23,7 +25,7 @@ function PendingBadge() {
   );
 }
 
-export default function App() {
+function AppLayout() {
   return (
     <div className="min-h-screen bg-gray-50">
       <nav className="bg-white border-b border-gray-200 px-6 py-3 flex items-center gap-8 shadow-sm">
@@ -70,6 +72,13 @@ export default function App() {
         >
           Monitor
         </NavLink>
+
+        <button
+          onClick={logout}
+          className="ml-auto text-xs text-gray-400 hover:text-gray-700 transition-colors"
+        >
+          Cerrar sesión
+        </button>
       </nav>
 
       <main className="max-w-7xl mx-auto px-4 py-6">
@@ -82,5 +91,21 @@ export default function App() {
         </Routes>
       </main>
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <Routes>
+      <Route path="/login" element={<Login />} />
+      <Route
+        path="/*"
+        element={
+          <ProtectedRoute>
+            <AppLayout />
+          </ProtectedRoute>
+        }
+      />
+    </Routes>
   );
 }

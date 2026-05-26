@@ -1,9 +1,10 @@
 import { useRef, useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   bulkImport,
   checkUrls,
   createManualListing,
+  fetchFuentes,
 } from "../services/api";
 import type { BulkImportResult, ManualListingIn } from "../services/api";
 
@@ -108,7 +109,6 @@ interface PreviewRow {
 // Manual form
 // ---------------------------------------------------------------------------
 
-const FUENTES = ["idealista", "fotocasa", "habitaclia", "pisos", "manual"];
 const ESTADOS = ["nuevo", "buen estado", "a reformar"];
 const CEE = ["A", "B", "C", "D", "E", "F", "G"];
 
@@ -117,6 +117,9 @@ const emptyForm = (): ManualListingIn => ({ url: "", fuente: "" });
 function ManualForm() {
   const [form, setForm] = useState<ManualListingIn>(emptyForm());
   const [result, setResult] = useState<{ status: string } | null>(null);
+
+  const fuentesQuery = useQuery({ queryKey: ["fuentes"], queryFn: () => fetchFuentes() });
+  const fuentes = fuentesQuery.data ?? [];
 
   const mutation = useMutation({
     mutationFn: () => createManualListing(form),
@@ -153,7 +156,7 @@ function ManualForm() {
             className="capitalize border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">— seleccionar —</option>
-            {FUENTES.map((f) => <option key={f} value={f}>{f.charAt(0).toUpperCase() + f.slice(1)}</option>)}
+            {fuentes.map((f) => <option key={f.id} value={f.id}>{f.nombre}</option>)}
           </select>
         </div>
       </div>

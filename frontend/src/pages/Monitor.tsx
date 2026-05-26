@@ -1,16 +1,29 @@
 import { useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { testPortal, fetchLogs } from "../services/api";
-import type { PortalTestResult, LogEntry } from "../services/api";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  testPortal, fetchLogs, fetchFuentes, createFuente, toggleFuente, deleteFuente, updateFuente,
+} from "../services/api";
+import type { PortalTestResult, LogEntry, Fuente } from "../services/api";
 
-const PORTALES = ["habitaclia", "pisos", "idealista", "fotocasa"];
+const IconEdit = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+  </svg>
+);
 
-const PORTAL_LABEL: Record<string, string> = {
-  habitaclia: "Habitaclia",
-  pisos: "Pisos.com",
-  idealista: "Idealista",
-  fotocasa: "Fotocasa",
-};
+const IconTrash = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="3 6 5 6 21 6"/>
+    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+    <path d="M10 11v6M14 11v6"/>
+    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+  </svg>
+);
+import Modal from "../components/Modal";
+import ConfirmDialog from "../components/ConfirmDialog";
 
 const STATUS_STYLE: Record<string, string> = {
   ok:      "bg-green-100 text-green-800",
@@ -43,7 +56,11 @@ function formatTs(ts?: string): string {
   }
 }
 
-function PortalCard({ portal }: { portal: string }) {
+// ---------------------------------------------------------------------------
+// Monitor tab
+// ---------------------------------------------------------------------------
+
+function PortalCard({ portal, nombre }: { portal: string; nombre: string }) {
   const [result, setResult] = useState<PortalTestResult | null>(null);
 
   const mutation = useMutation({
@@ -54,9 +71,7 @@ function PortalCard({ portal }: { portal: string }) {
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <span className="font-semibold text-gray-800 capitalize">
-          {PORTAL_LABEL[portal] ?? portal}
-        </span>
+        <span className="font-semibold text-gray-800">{nombre}</span>
         {result && (
           <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_STYLE[result.status]}`}>
             {STATUS_ICON[result.status]} {result.status.toUpperCase()}
@@ -101,7 +116,6 @@ function LogRow({ entry }: { entry: LogEntry }) {
   const msg = (entry.msg as string) ?? (entry.raw as string) ?? "";
   const logger = (entry.logger as string) ?? "";
 
-  // Extras: todo lo que no son campos base
   const extras = Object.entries(entry).filter(
     ([k]) => !["ts", "level", "logger", "msg", "raw"].includes(k)
   );
@@ -109,9 +123,7 @@ function LogRow({ entry }: { entry: LogEntry }) {
   return (
     <div className="flex gap-3 py-2 border-b border-gray-50 text-xs font-mono">
       <span className="text-gray-300 shrink-0 w-20">{formatTs(entry.ts as string)}</span>
-      <span className={`shrink-0 w-16 ${LEVEL_STYLE[level] ?? LEVEL_STYLE.INFO}`}>
-        {level}
-      </span>
+      <span className={`shrink-0 w-16 ${LEVEL_STYLE[level] ?? LEVEL_STYLE.INFO}`}>{level}</span>
       <span className="text-blue-400 shrink-0 w-28 truncate">{logger}</span>
       <span className="text-gray-700 flex-1 break-all">
         {msg}
@@ -125,8 +137,13 @@ function LogRow({ entry }: { entry: LogEntry }) {
   );
 }
 
-export default function Monitor() {
+function MonitorTab() {
   const [logLines, setLogLines] = useState(50);
+
+  const fuentesQuery = useQuery({
+    queryKey: ["fuentes"],
+    queryFn: () => fetchFuentes(),
+  });
 
   const logsQuery = useQuery({
     queryKey: ["logs", logLines],
@@ -134,23 +151,26 @@ export default function Monitor() {
     refetchInterval: 30_000,
   });
 
+  const portales = (fuentesQuery.data ?? []).filter(
+    (f) => f.activo && f.id !== "manual"
+  );
+
   return (
     <div className="flex flex-col gap-8">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-800">Monitor</h1>
-        <p className="text-sm text-gray-400 mt-1">
-          Estado de portales y logs del sistema
-        </p>
-      </div>
-
       {/* Portales */}
       <section className="flex flex-col gap-3">
         <h2 className="text-base font-semibold text-gray-700">Estado de portales</h2>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {PORTALES.map((p) => (
-            <PortalCard key={p} portal={p} />
-          ))}
-        </div>
+        {fuentesQuery.isLoading ? (
+          <p className="text-sm text-gray-400">Cargando portales…</p>
+        ) : portales.length === 0 ? (
+          <p className="text-sm text-gray-400">No hay portales activos configurados.</p>
+        ) : (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {portales.map((f) => (
+              <PortalCard key={f.id} portal={f.id} nombre={f.nombre} />
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Logs */}
@@ -201,6 +221,311 @@ export default function Monitor() {
           )}
         </div>
       </section>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Portales tab
+// ---------------------------------------------------------------------------
+
+function slugify(nombre: string): string {
+  return nombre
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
+function PortalesTab() {
+  const qc = useQueryClient();
+  const [modalOpen, setModalOpen] = useState(false);
+  const [nombre, setNombre] = useState("");
+  const [testUrl, setTestUrl] = useState("");
+
+  const fuentesQuery = useQuery({
+    queryKey: ["fuentes"],
+    queryFn: () => fetchFuentes(),
+  });
+
+  const closeModal = () => {
+    setModalOpen(false);
+    setNombre(""); setTestUrl("");
+  };
+
+  const createMut = useMutation({
+    mutationFn: () => createFuente(slugify(nombre.trim()), nombre.trim(), testUrl.trim() || undefined),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["fuentes"] });
+      closeModal();
+    },
+  });
+
+  const toggleMut = useMutation({
+    mutationFn: ({ fid, activo }: { fid: string; activo: boolean }) =>
+      toggleFuente(fid, activo),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["fuentes"] }),
+  });
+
+  const [deleteTarget, setDeleteTarget] = useState<Fuente | null>(null);
+
+  const deleteMut = useMutation({
+    mutationFn: (fid: string) => deleteFuente(fid),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["fuentes"] });
+      setDeleteTarget(null);
+    },
+  });
+
+  const [editFuente, setEditFuente] = useState<Fuente | null>(null);
+  const [editNombre, setEditNombre] = useState("");
+  const [editTestUrl, setEditTestUrl] = useState("");
+
+  const openEdit = (f: Fuente) => {
+    setEditFuente(f);
+    setEditNombre(f.nombre);
+    setEditTestUrl(f.test_url ?? "");
+  };
+  const closeEdit = () => setEditFuente(null);
+
+  const updateMut = useMutation({
+    mutationFn: () => updateFuente(editFuente!.id, editNombre.trim(), editTestUrl.trim() || undefined),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["fuentes"] });
+      closeEdit();
+    },
+  });
+
+  const fuentes: Fuente[] = fuentesQuery.data ?? [];
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex justify-end">
+        <button
+          onClick={() => setModalOpen(true)}
+          className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          + Añadir portal
+        </button>
+      </div>
+
+      {/* Lista */}
+      <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+        {fuentesQuery.isLoading ? (
+          <p className="text-sm text-gray-400 text-center py-10">Cargando…</p>
+        ) : fuentes.length === 0 ? (
+          <p className="text-sm text-gray-400 text-center py-10">Sin portales configurados.</p>
+        ) : (
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Nombre</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">URL de test</th>
+                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500">Activo</th>
+                <th className="px-4 py-3"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {fuentes.map((f) => (
+                <tr key={f.id} className="border-b border-gray-100 last:border-0">
+                  <td className="px-4 py-3 font-medium text-gray-800">{f.nombre}</td>
+                  <td className="px-4 py-3 max-w-xs">
+                    {f.test_url ? (
+                      <a
+                        href={f.test_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-xs text-blue-500 hover:underline truncate block"
+                      >
+                        {f.test_url}
+                      </a>
+                    ) : (
+                      <span className="text-xs text-gray-300">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <button
+                      onClick={() => toggleMut.mutate({ fid: f.id, activo: !f.activo })}
+                      disabled={toggleMut.isPending}
+                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                        f.activo ? "bg-blue-500" : "bg-gray-300"
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
+                          f.activo ? "translate-x-4" : "translate-x-1"
+                        }`}
+                      />
+                    </button>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <div className="flex items-center justify-end gap-3">
+                      <button
+                        onClick={() => openEdit(f)}
+                        className="text-gray-400 hover:text-blue-600 transition-colors"
+                        title="Editar"
+                      >
+                        <IconEdit />
+                      </button>
+                      <button
+                        onClick={() => setDeleteTarget(f)}
+                        className="text-gray-400 hover:text-red-600 transition-colors"
+                        title="Eliminar"
+                      >
+                        <IconTrash />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      <Modal isOpen={!!editFuente} onClose={closeEdit} title="Editar portal">
+        <form
+          onSubmit={(e) => { e.preventDefault(); updateMut.mutate(); }}
+          className="flex flex-col gap-4"
+        >
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs text-gray-500">Nombre</label>
+            <input
+              required
+              autoFocus
+              value={editNombre}
+              onChange={(e) => setEditNombre(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs text-gray-500">URL de test</label>
+            <input
+              type="url"
+              placeholder="https://..."
+              value={editTestUrl}
+              onChange={(e) => setEditTestUrl(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          {updateMut.isError && (
+            <p className="text-xs text-red-500">Error al guardar los cambios.</p>
+          )}
+          <div className="flex gap-2 justify-end pt-1">
+            <button
+              type="button"
+              onClick={closeEdit}
+              className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={updateMut.isPending || !editNombre.trim()}
+              className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {updateMut.isPending ? "Guardando…" : "Guardar"}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => deleteMut.mutate(deleteTarget!.id)}
+        loading={deleteMut.isPending}
+        title="Eliminar portal"
+        message={`¿Seguro que quieres eliminar "${deleteTarget?.nombre}"? Esta acción no se puede deshacer.`}
+      />
+
+      <Modal isOpen={modalOpen} onClose={closeModal} title="Añadir portal">
+        <form
+          onSubmit={(e) => { e.preventDefault(); createMut.mutate(); }}
+          className="flex flex-col gap-4"
+        >
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs text-gray-500">Nombre</label>
+            <input
+              required
+              autoFocus
+              placeholder="Mi Portal"
+              value={nombre}
+              onChange={(e) => setNombre(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs text-gray-500">URL de test</label>
+            <input
+              type="url"
+              placeholder="https://www.mi-portal.com/venta/pisos-barcelona/"
+              value={testUrl}
+              onChange={(e) => setTestUrl(e.target.value)}
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <p className="text-xs text-gray-400">URL que se usa en Monitor para probar la conexión con el portal.</p>
+          </div>
+          {createMut.isError && (
+            <p className="text-xs text-red-500">Error al añadir el portal.</p>
+          )}
+          <div className="flex gap-2 justify-end pt-1">
+            <button
+              type="button"
+              onClick={closeModal}
+              className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={createMut.isPending || !nombre.trim()}
+              className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {createMut.isPending ? "Añadiendo…" : "Añadir"}
+            </button>
+          </div>
+        </form>
+      </Modal>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
+
+type Tab = "monitor" | "portales";
+
+export default function Monitor() {
+  const [tab, setTab] = useState<Tab>("monitor");
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-800">Monitor</h1>
+        <p className="text-sm text-gray-400 mt-1">Estado de portales y logs del sistema</p>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
+        {(["monitor", "portales"] as Tab[]).map((t) => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              tab === t
+                ? "bg-white text-gray-800 shadow-sm"
+                : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            {t === "monitor" ? "Monitor" : "Portales"}
+          </button>
+        ))}
+      </div>
+
+      {tab === "monitor" ? <MonitorTab /> : <PortalesTab />}
     </div>
   );
 }
