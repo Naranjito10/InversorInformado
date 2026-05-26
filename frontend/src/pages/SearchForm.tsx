@@ -1,9 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { fetchZones, runSearch } from "../services/api";
+import { fetchZones, runSearch, fetchFuentes } from "../services/api";
 import type { SearchRequest, SearchResponse } from "../types";
-
-const PORTALES = ["idealista", "fotocasa", "habitaclia", "pisos"];
 const PAGINAS = [10, 20, 50, 100];
 
 const initialForm: SearchRequest = {
@@ -19,6 +17,12 @@ export default function SearchForm() {
   const [result, setResult] = useState<SearchResponse | null>(null);
 
   const zonesQuery = useQuery({ queryKey: ["zones"], queryFn: fetchZones });
+  const { data: fuentes = [] } = useQuery({
+    queryKey: ["fuentes"],
+    queryFn: () => fetchFuentes(),
+    staleTime: 60_000,
+  });
+  const portales = fuentes.filter((f) => f.activo && f.id !== "manual");
 
   const searchMutation = useMutation({
     mutationFn: runSearch,
@@ -115,21 +119,21 @@ export default function SearchForm() {
             Portales <span className="text-red-500">*</span>
           </label>
           <div className="flex flex-wrap gap-3">
-            {PORTALES.map((portal) => {
+            {portales.map((f) => {
               const available =
                 !form.zona ||
                 (zonesQuery.data
                   ?.find((z) => z.label === form.zona)
-                  ?.portales_disponibles.includes(portal) ??
+                  ?.portales_disponibles.includes(f.id) ??
                 true);
-              const selected = form.portales.includes(portal);
+              const selected = form.portales.includes(f.id);
               return (
                 <button
-                  key={portal}
+                  key={f.id}
                   type="button"
                   disabled={!available}
-                  onClick={() => togglePortal(portal)}
-                  className={`px-4 py-2 rounded-lg text-sm border transition-colors capitalize
+                  onClick={() => togglePortal(f.id)}
+                  className={`px-4 py-2 rounded-lg text-sm border transition-colors
                     ${selected
                       ? "bg-blue-600 text-white border-blue-600"
                       : available
@@ -137,7 +141,7 @@ export default function SearchForm() {
                       : "bg-gray-50 text-gray-300 border-gray-200 cursor-not-allowed"
                     }`}
                 >
-                  {portal === "pisos" ? "Pisos.com" : portal.charAt(0).toUpperCase() + portal.slice(1)}
+                  {f.nombre}
                   {!available && " (n/d)"}
                 </button>
               );

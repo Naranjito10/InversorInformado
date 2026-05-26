@@ -1,16 +1,23 @@
+import { useQuery } from "@tanstack/react-query";
 import type { ListingFilters } from "../services/api";
+import { fetchFuentes } from "../services/api";
 
 interface Props {
   filters: ListingFilters;
   onChange: (f: ListingFilters) => void;
 }
 
-const PORTALES = ["idealista", "fotocasa", "habitaclia", "pisos"];
 const LABELS = ["alto", "medio", "normal", "incompleto"];
 
 export default function Filters({ filters, onChange }: Props) {
   const set = (key: keyof ListingFilters, value: unknown) =>
     onChange({ ...filters, [key]: value || undefined });
+
+  const { data: fuentes = [] } = useQuery({
+    queryKey: ["fuentes"],
+    queryFn: () => fetchFuentes(),
+    staleTime: 60_000,
+  });
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex flex-wrap gap-3 items-end">
@@ -32,7 +39,7 @@ export default function Filters({ filters, onChange }: Props) {
           onChange={(e) => set("fuente", e.target.value)}
         >
           <option value="">Todos</option>
-          {PORTALES.map((p) => <option key={p} value={p}>{p}</option>)}
+          {fuentes.map((f) => <option key={f.id} value={f.id}>{f.nombre}</option>)}
         </select>
       </div>
 

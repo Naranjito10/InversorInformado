@@ -11,12 +11,16 @@ router = APIRouter(prefix="/api/monitor", tags=["monitor"])
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 
-PORTAL_TEST_URLS = {
-    "habitaclia": "https://www.habitaclia.com/comprar-piso-en-barcelona.htm",
-    "pisos":      "https://www.pisos.com/venta/pisos-barcelona/",
-    "idealista":  "https://www.idealista.com/venta-viviendas/barcelona/",
-    "fotocasa":   "https://www.fotocasa.es/es/comprar/viviendas/barcelona-capital/todas-las-zonas/l",
-}
+
+def _get_test_url(portal: str) -> str | None:
+    from scraper.infrastructure.db import get_client
+    client = get_client()
+    if client is None:
+        return None
+    resp = client.table("fuentes").select("test_url").eq("id", portal).limit(1).execute()
+    if resp.data:
+        return resp.data[0].get("test_url") or None
+    return None
 
 _HEADERS = {
     "User-Agent": (
@@ -31,9 +35,9 @@ _HEADERS = {
 @router.post("/test/{portal}")
 def test_portal(portal: str):
     """Prueba conectividad real con un portal: status HTTP + detección de bloqueo."""
-    url = PORTAL_TEST_URLS.get(portal.lower())
+    url = _get_test_url(portal.lower())
     if not url:
-        return {"portal": portal, "status": "error", "detail": "Portal desconocido"}
+        return {"portal": portal, "status": "error", "detail": "Sin URL de test configurada para este portal"}
 
     from scraper.infrastructure.http_client import _is_blocked
 
