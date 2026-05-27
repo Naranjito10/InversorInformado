@@ -3,6 +3,36 @@ import type { Listing, Stats, Zone, SearchRequest, SearchResponse } from "../typ
 
 const api = axios.create({ baseURL: "/api" });
 
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+api.interceptors.response.use(
+  (r) => r,
+  (err) => {
+    if (err.response?.status === 401) {
+      localStorage.removeItem("token");
+      window.location.href = "/login";
+    }
+    return Promise.reject(err);
+  }
+);
+
+export const login = async (
+  email: string,
+  password: string
+): Promise<{ access_token: string; token_type: string }> => {
+  const { data } = await axios.post("/api/auth/login", { email, password });
+  return data;
+};
+
+export const logout = (): void => {
+  localStorage.removeItem("token");
+  window.location.href = "/login";
+};
+
 export interface ListingFilters {
   municipio?: string;
   fuente?: string;
@@ -146,6 +176,48 @@ export const bulkImport = async (
 ): Promise<BulkImportResult> => {
   const { data } = await api.post<BulkImportResult>("/listings/bulk", { listings });
   return data;
+};
+
+export interface Fuente {
+  id: string;
+  nombre: string;
+  activo: boolean;
+  test_url?: string;
+  created_at?: string;
+}
+
+export const fetchFuentes = async (soloActivos = false): Promise<Fuente[]> => {
+  const { data } = await api.get<Fuente[]>("/fuentes", {
+    params: soloActivos ? { solo_activos: true } : {},
+  });
+  return data;
+};
+
+export const createFuente = async (
+  id: string,
+  nombre: string,
+  test_url?: string
+): Promise<Fuente> => {
+  const { data } = await api.post<Fuente>("/fuentes", { id, nombre, test_url });
+  return data;
+};
+
+export const toggleFuente = async (id: string, activo: boolean): Promise<Fuente> => {
+  const { data } = await api.patch<Fuente>(`/fuentes/${id}/toggle`, { activo });
+  return data;
+};
+
+export const updateFuente = async (
+  id: string,
+  nombre: string,
+  test_url?: string
+): Promise<Fuente> => {
+  const { data } = await api.put<Fuente>(`/fuentes/${id}`, { nombre, test_url: test_url || null });
+  return data;
+};
+
+export const deleteFuente = async (id: string): Promise<void> => {
+  await api.delete(`/fuentes/${id}`);
 };
 
 export const exportExcel = (filters: ListingFilters = {}): void => {
