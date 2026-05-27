@@ -314,7 +314,7 @@ body {
   <!-- COVER HEADER -->
   <div class="cover">
     <div class="cover-tag">{{ report_tag }}</div>
-    <div class="cover-title">{{ report_title }}</div>
+    <div class="cover-title">{{ report_title | safe }}</div>
     <div class="cover-address">{{ p.direccion }} &nbsp;·&nbsp; {{ p.municipio }}, {{ p.barrio }}</div>
 
     <table class="cover-stats">
@@ -326,8 +326,8 @@ body {
         </td>
         <td class="cover-stat">
           <div class="cover-stat-label">Precio / m²</div>
-          <div class="cover-stat-value">{{ m.precio_m2_piso | int }} €</div>
-          <div class="cover-stat-sub">Media zona: {{ m.precio_m2_zona_medio | int }} €/m²</div>
+          <div class="cover-stat-value">{{ m.precio_m2_piso | format_price }} €</div>
+          <div class="cover-stat-sub">Media zona: {{ m.precio_m2_zona_medio | format_price }} €/m²</div>
         </td>
         <td class="cover-stat">
           <div class="cover-stat-label">Rentabilidad bruta</div>
@@ -339,7 +339,7 @@ body {
 
     <div class="verdict-bar">
       <div class="verdict-dot"></div>
-      <div class="verdict-text"><strong style="color:#fff">Valoración general:</strong> {{ data.verdict }}</div>
+      <div class="verdict-text"><strong style="color:#fff">Valoración general:</strong> {{ data.verdict | safe }}</div>
     </div>
   </div>
 
@@ -358,33 +358,31 @@ body {
               <div class="mkt-dot" style="left:{{ m.pos_pct_precio_m2 }}%;"></div>
             </div>
             <div class="mkt-labels">
-              <span>Mín. {{ m.precio_m2_zona_min | int }} €</span><span style="color:#3b82f6">Media {{ m.precio_m2_zona_medio | int }} €</span><span>Máx. {{ m.precio_m2_zona_max | int }} €</span>
+              <span>Mín. {{ m.precio_m2_zona_min | format_price }} €</span><span style="color:#3b82f6">Media {{ m.precio_m2_zona_medio | format_price }} €</span><span>Máx. {{ m.precio_m2_zona_max | format_price }} €</span>
             </div>
-            <div style="margin-top:8px"><span class="badge badge-up">Este piso: {{ m.precio_m2_piso | int }} €/m² · Top {{ m.percentil_precio }}% más barato</span></div>
+            <div style="margin-top:8px"><span class="badge badge-up">Este piso: {{ m.precio_m2_piso | format_price }} €/m² · Top {{ m.percentil_precio }}% más barato</span></div>
             <div class="card-sub" style="margin-top:5px">Un precio {{ m.descuento_vs_media }}% inferior a la media del {{ p.barrio }}</div>
           </div>
         </td>
         <td class="grid2-cell">
           <div class="card">
-            <div class="card-label">Ranking frente a 248 pisos similares en la zona</div>
-            <div style="margin-top:8px">
-              <div class="rank-row">
-                <div class="rank-name">Este piso</div>
-                <div class="rank-bar-wrap"><div class="rank-bar-bg"><div class="rank-bar-fill" style="width:62%; background:#0D1B2A;"></div></div></div>
-                <div class="rank-pct" style="color:#1a1a1a; font-weight:600">62%</div>
-              </div>
-              <div class="rank-row">
-                <div class="rank-name">Media barrio</div>
-                <div class="rank-bar-wrap"><div class="rank-bar-bg"><div class="rank-bar-fill" style="width:50%; background:#94a3b8;"></div></div></div>
-                <div class="rank-pct">50%</div>
-              </div>
-              <div class="rank-row">
-                <div class="rank-name">Mejor oferta zona</div>
-                <div class="rank-bar-wrap"><div class="rank-bar-bg"><div class="rank-bar-fill" style="width:85%; background:#4ade80;"></div></div></div>
-                <div class="rank-pct" style="color:#166534">85%</div>
-              </div>
-            </div>
-            <div class="card-sub" style="margin-top:4px">Percentil 62 de relación calidad-precio del mercado</div>
+            <div class="card-label">Ranking frente a pisos similares en la zona</div>
+            <div class="rank-row">
+  <div class="rank-label">Precio/m²</div>
+  <div class="rank-bar"><div class="rank-bar-fill" style="width:{{ s.percentil_precio }}%; background:#0D1B2A;"></div></div>
+  <div class="rank-pct" style="color:#1a1a1a; font-weight:600">Top {{ s.percentil_precio }}%</div>
+</div>
+<div class="rank-row">
+  <div class="rank-label">Rentabilidad</div>
+  <div class="rank-bar"><div class="rank-bar-fill" style="width:{{ s.percentil_rentabilidad }}%;"></div></div>
+  <div class="rank-pct">Top {{ s.percentil_rentabilidad }}%</div>
+</div>
+<div class="rank-row">
+  <div class="rank-label">Vecindario</div>
+  <div class="rank-bar"><div class="rank-bar-fill" style="width:{{ s.percentil_vecindario }}%; background:#166534;"></div></div>
+  <div class="rank-pct" style="color:#166534">Top {{ s.percentil_vecindario }}%</div>
+</div>
+<div class="card-sub" style="margin-top:4px">Percentil {{ s.percentil_precio }} de relación calidad-precio del mercado</div>
           </div>
         </td>
       </tr>
@@ -399,7 +397,7 @@ body {
         <td class="grid3-cell">
           <div class="card">
             <div class="card-label">Alquiler estimado de mercado</div>
-            <div class="card-value">{{ m.alquiler_estimado_mes | int }} €</div>
+            <div class="card-value">{{ m.alquiler_estimado_mes | format_price }} €</div>
             <div class="card-sub">/ mes · piso similar en zona</div>
             <span class="badge badge-up">{{ m.alquiler_vs_media_pct }}% vs. media barrio</span>
           </div>
@@ -408,7 +406,7 @@ body {
           <div class="card">
             <div class="card-label">Rentabilidad bruta anual</div>
             <div class="card-value">{{ m.rentabilidad_bruta }}%</div>
-            <div class="card-sub">{{ (m.alquiler_estimado_mes * 12) | int }} € / año estimados</div>
+            <div class="card-sub">{{ (m.alquiler_estimado_mes * 12) | format_price }} € / año estimados</div>
             <span class="badge badge-info">Media zona: {{ m.rentabilidad_bruta_media_zona }}%</span>
           </div>
         </td>
@@ -439,7 +437,7 @@ body {
             <div class="mkt-labels" style="font-size:9px">
               <span>Baja</span><span>Media</span><span style="color:#1a1a1a; font-weight:500">Muy alta ▲</span>
             </div>
-            <div class="card-sub" style="margin-top:7px">Tiempo medio hasta arrendamiento: <strong>{{ m.dias_hasta_alquiler }} días</strong>. Una de las zonas más demandadas de Barcelona.</div>
+            <div class="card-sub" style="margin-top:7px">Tiempo medio hasta arrendamiento: <strong>{{ m.dias_hasta_alquiler }} días</strong>. Una de las zonas más demandadas de {{ p.municipio }}.</div>
           </div>
         </td>
         <td class="grid2-cell">
@@ -452,9 +450,9 @@ body {
                 <div class="rank-pct" style="color:#1a1a1a;">{{ m.dias_hasta_alquiler }} días</div>
               </div>
               <div class="rank-row">
-                <div class="rank-name">Media Barcelona</div>
+                <div class="rank-name">Media {{ p.municipio }}</div>
                 <div class="rank-bar-wrap"><div class="rank-bar-bg"><div class="rank-bar-fill" style="width:55%; background:#94a3b8;"></div></div></div>
-                <div class="rank-pct">19 días</div>
+                <div class="rank-pct">{{ m.media_dias_mercado | default(19) }} días</div>
               </div>
               <div class="rank-row">
                 <div class="rank-name">Zonas con baja demanda</div>
@@ -462,7 +460,7 @@ body {
                 <div class="rank-pct" style="color:#991b1b">45+ días</div>
               </div>
             </div>
-            <div class="card-sub" style="margin-top:3px">Los pisos aquí se alquilan <strong>{{ m.velocidad_vs_media_pct }}% más rápido</strong> que la media de Barcelona</div>
+            <div class="card-sub" style="margin-top:3px">Los pisos aquí se alquilan <strong>{{ m.velocidad_vs_media_pct }}% más rápido</strong> que la media de {{ p.municipio }}</div>
           </div>
         </td>
       </tr>
@@ -487,48 +485,48 @@ body {
         <tr>
           <td style="width:28px; color:#888; font-size:13px;">🏢</td>
           <td style="color:#1a1a1a; font-weight:500;">Año de construcción</td>
-          <td style="color:#888; font-size:10px; text-align:right; padding-right:12px;">{{ b.anyo_construccion }} ({{ 2026 - b.anyo_construccion }} años)</td>
+          <td style="color:#888; font-size:10px; text-align:right; padding-right:12px;">{{ b.anyo_construccion }} ({{ current_year - b.anyo_construccion }} años)</td>
           <td style="width:130px; text-align:right;"><span class="risk-badge risk-warn">Requiere atención</span></td>
         </tr>
         <tr>
           <td style="color:#888; font-size:13px;">📋</td>
           <td style="color:#1a1a1a; font-weight:500;">ITE (Inspección Técnica Edificio)</td>
           <td style="color:#888; font-size:10px; text-align:right; padding-right:12px;">{{ b.ite_resultado | title }} · {{ b.ite_fecha }}</td>
-          <td style="text-align:right;"><span class="risk-badge risk-ok">Sin deficiencias</span></td>
+          <td style="text-align:right;"><span class="risk-badge {{ 'risk-ok' if b.ite_resultado == 'favorable' else 'risk-warn' }}">{{ 'Sin deficiencias' if b.ite_resultado == 'favorable' else 'Revisar ITE' }}</span></td>
         </tr>
         <tr>
           <td style="color:#888; font-size:13px;">💧</td>
           <td style="color:#1a1a1a; font-weight:500;">Humedades o filtraciones</td>
           <td style="color:#888; font-size:10px; text-align:right; padding-right:12px;">{{ "No detectadas" if not b.humedades else "Detectadas" }}</td>
-          <td style="text-align:right;"><span class="risk-badge risk-ok">Sin riesgo</span></td>
+          <td style="text-align:right;"><span class="risk-badge {{ 'risk-alert' if b.humedades else 'risk-ok' }}">{{ 'Detectadas' if b.humedades else 'Sin riesgo' }}</span></td>
         </tr>
         <tr>
           <td style="color:#888; font-size:13px;">🛗</td>
           <td style="color:#1a1a1a; font-weight:500;">Ascensor</td>
           <td style="color:#888; font-size:10px; text-align:right; padding-right:12px;">{{ "Sí" if b.ascensor else "No" }}</td>
-          <td style="text-align:right;"><span class="risk-badge risk-ok">Correcto</span></td>
+          <td style="text-align:right;"><span class="risk-badge {{ 'risk-ok' if b.ascensor else 'risk-warn' }}">{{ 'Correcto' if b.ascensor else 'Sin ascensor' }}</span></td>
         </tr>
         <tr>
           <td style="color:#888; font-size:13px;">⚡</td>
           <td style="color:#1a1a1a; font-weight:500;">Instalación eléctrica</td>
           <td style="color:#888; font-size:10px; text-align:right; padding-right:12px;">{{ b.electrica }}</td>
-          <td style="text-align:right;"><span class="risk-badge risk-warn">Actualizar recomendado</span></td>
+          <td style="text-align:right;"><span class="risk-badge {{ 'risk-ok' if b.electrica and 'renov' in b.electrica|lower else 'risk-warn' }}">{{ 'Actualizada' if b.electrica and 'renov' in b.electrica|lower else 'Actualizar recomendado' }}</span></td>
         </tr>
         <tr>
           <td style="color:#888; font-size:13px;">🌡️</td>
           <td style="color:#1a1a1a; font-weight:500;">Eficiencia energética</td>
           <td style="color:#888; font-size:10px; text-align:right; padding-right:12px;">Calificación {{ p.cee if p.cee else "—" }}</td>
-          <td style="text-align:right;"><span class="risk-badge risk-warn">Mejorable</span></td>
+          <td style="text-align:right;"><span class="risk-badge {{ 'risk-ok' if p.cee in ['A', 'B', 'C'] else 'risk-warn' if p.cee in ['D', 'E'] else 'risk-alert' }}">{{ 'Eficiente' if p.cee in ['A', 'B', 'C'] else 'Mejorable' if p.cee in ['D', 'E'] else 'Revisar' }}</span></td>
         </tr>
         <tr>
           <td style="color:#888; font-size:13px;">🔧</td>
           <td style="color:#1a1a1a; font-weight:500;">Fondo de reserva comunidad</td>
           <td style="color:#888; font-size:10px; text-align:right; padding-right:12px;">{{ b.fondo_reserva | format_price }} € · {{ b.fondo_reserva_estado }}</td>
-          <td style="text-align:right;"><span class="risk-badge risk-ok">Sin derramas previstas</span></td>
+          <td style="text-align:right;"><span class="risk-badge {{ 'risk-ok' if b.fondo_reserva_estado and 'adecuado' in b.fondo_reserva_estado|lower else 'risk-warn' }}">{{ b.fondo_reserva_estado if b.fondo_reserva_estado else 'No informado' }}</span></td>
         </tr>
       </table>
       <div class="alert-box">
-        {{ b.alerta_reformas }}
+        {{ b.alerta_reformas | safe }}
       </div>
     </div>
   </div>
@@ -597,7 +595,7 @@ body {
       </tr>
     </table>
     <div class="info-box">
-      {{ a.descripcion_cercano }}
+      {{ a.descripcion_cercano | safe }}
     </div>
   </div>
 
@@ -655,7 +653,7 @@ body {
         <div style="display:table-cell; width:50%; vertical-align:middle; padding-right:16px;">
           <div style="font-size:10px; color:#888; margin-bottom:4px;">Resumen de inversión</div>
           <div style="font-size:11px; color:#1a1a1a; line-height:1.6;">
-            {{ s.resumen }}
+            {{ s.resumen | safe }}
           </div>
         </div>
         <div style="display:table-cell; width:50%; vertical-align:middle; border-left:0.5px solid #e0ddd8; padding-left:16px;">
