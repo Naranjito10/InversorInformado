@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { fetchListings, createReport, aiEstimateMarket } from "../services/api";
 import type { Listing } from "../types";
 import type { ReportData, ReportMarket, ReportBuilding, ReportAmenities, ReportScores } from "../types";
@@ -20,7 +20,9 @@ const EMPTY_SCORES: ReportScores = {
 
 export default function InformeNuevo() {
   const navigate = useNavigate();
-  const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
+  const location = useLocation();
+  const preselected = (location.state as { listing?: Listing } | null)?.listing ?? null;
+  const [selectedListing, setSelectedListing] = useState<Listing | null>(preselected);
   const [search, setSearch] = useState("");
   const [market, setMarket] = useState<ReportMarket>(EMPTY_MARKET);
   const [building, _setBuilding] = useState<ReportBuilding>({});
@@ -93,6 +95,12 @@ export default function InformeNuevo() {
 
   return (
     <div className="flex flex-col gap-6 max-w-3xl">
+      <button
+        onClick={() => navigate("/informes")}
+        className="self-start flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors"
+      >
+        ← Volver a Informes
+      </button>
       <div>
         <h1 className="text-xl font-bold text-gray-900">Nuevo análisis</h1>
         <p className="text-sm text-gray-500 mt-0.5">

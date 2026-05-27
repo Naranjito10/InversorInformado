@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { Listing } from "../types";
-import { createManualListing, fetchFuentes } from "../services/api";
+import { useNavigate } from "react-router-dom";
+import type { Listing, Report } from "../types";
+import { createManualListing, fetchFuentes, fetchReports } from "../services/api";
 import type { ManualListingIn } from "../services/api";
 
 interface Props {
@@ -74,6 +75,17 @@ function XIcon() {
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <line x1="18" y1="6" x2="6" y2="18" />
       <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  );
+}
+
+function DocumentIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+      <line x1="16" y1="13" x2="8" y2="13" />
+      <line x1="16" y1="17" x2="8" y2="17" />
     </svg>
   );
 }
@@ -359,8 +371,21 @@ function ListingDrawer({ listing, onClose }: DrawerProps) {
 }
 
 export default function ListingsTable({ listings, isLoading }: Props) {
+  const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
+
+  const { data: reports = [] } = useQuery<Report[]>({
+    queryKey: ["reports"],
+    queryFn: fetchReports,
+    staleTime: 60_000,
+  });
+
+  const reportByPropertyId = new Map<string, string>(
+    reports
+      .filter((r) => r.property_id)
+      .map((r) => [r.property_id!, r.id])
+  );
 
   useEffect(() => {
     setPage(1);
@@ -473,6 +498,26 @@ export default function ListingsTable({ listings, isLoading }: Props) {
                       >
                         <ExternalLinkIcon />
                       </a>
+                      {(() => {
+                        const reportId = l.id ? reportByPropertyId.get(l.id) : undefined;
+                        return reportId ? (
+                          <button
+                            onClick={() => navigate(`/informes/${reportId}`)}
+                            title="Ver informe"
+                            className="p-1.5 rounded-md text-blue-600 hover:text-blue-800 hover:bg-blue-50 transition-colors"
+                          >
+                            <DocumentIcon />
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => navigate("/informes/nuevo", { state: { listing: l } })}
+                            title="Crear informe"
+                            className="p-1.5 rounded-md text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                          >
+                            <DocumentIcon />
+                          </button>
+                        );
+                      })()}
                     </div>
                   </td>
                 </tr>
