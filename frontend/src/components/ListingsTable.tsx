@@ -60,6 +60,7 @@ export default function ListingsTable({ listings, isLoading }: Props) {
               <th className="px-4 py-3 text-left">€/m²</th>
               <th className="px-4 py-3 text-left">m²</th>
               <th className="px-4 py-3 text-left">Hab.</th>
+              <th className="px-4 py-3 text-left">Planta</th>
               <th className="px-4 py-3 text-left">Zona</th>
               <th className="px-4 py-3 text-left">Rent. bruta</th>
               <th className="px-4 py-3 text-left">Bajada</th>
@@ -87,6 +88,11 @@ export default function ListingsTable({ listings, isLoading }: Props) {
                 </td>
                 <td className="px-4 py-3 text-gray-600">{l.metros_cuadrados ?? "—"}</td>
                 <td className="px-4 py-3 text-gray-600">{l.habitaciones ?? "—"}</td>
+                <td className="px-4 py-3 text-gray-600">
+                  {l.tipo_propiedad === "Casa"
+                    ? <span className="text-amber-700 font-medium">Casa</span>
+                    : l.planta ?? "—"}
+                </td>
                 <td className="px-4 py-3 text-gray-600">
                   {[l.barrio, l.municipio].filter(Boolean).join(", ") || "—"}
                 </td>

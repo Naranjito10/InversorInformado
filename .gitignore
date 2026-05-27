@@ -6,8 +6,7 @@ __pycache__/
 venv/
 .vscode/
 .idea/
-logs/*.jsonl
-logs/*.log
+logs/
 *.xlsx
 !export/example.xlsx
 .DS_Store

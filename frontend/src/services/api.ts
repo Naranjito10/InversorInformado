@@ -148,6 +148,7 @@ export interface ManualListingIn {
   certificado_energetico?: string;
   alquiler_estimado?: number;
   precio_zona_m2?: number;
+  planta?: string;
 }
 
 export interface BulkImportResult {

@@ -1,0 +1,400 @@
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-sans, system-ui); }
+
+  .mp-header {
+    padding: 1rem 0 0.75rem;
+    border-bottom: 0.5px solid var(--color-border-tertiary);
+    margin-bottom: 1rem;
+  }
+  .mp-header-top {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;
+  }
+  .mp-title { font-size: 18px; font-weight: 500; color: var(--color-text-primary); }
+  .mp-subtitle { font-size: 13px; color: var(--color-text-secondary); margin-top: 2px; }
+
+  .mp-filters {
+    display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+  }
+  .filter-btn {
+    font-size: 12px; padding: 5px 12px; border-radius: 20px;
+    border: 0.5px solid var(--color-border-secondary);
+    background: var(--color-background-primary);
+    color: var(--color-text-secondary);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .filter-btn.active {
+    background: #185FA5; color: #E6F1FB; border-color: #185FA5;
+  }
+  .filter-btn:hover:not(.active) { background: var(--color-background-secondary); }
+
+  .sort-select {
+    font-size: 12px; padding: 5px 10px; border-radius: 6px;
+    border: 0.5px solid var(--color-border-secondary);
+    background: var(--color-background-primary);
+    color: var(--color-text-primary);
+    cursor: pointer; margin-left: auto;
+  }
+
+  .mp-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+  }
+
+  .prop-card {
+    background: var(--color-background-primary);
+    border: 0.5px solid var(--color-border-tertiary);
+    border-radius: var(--border-radius-lg);
+    display: flex; flex-direction: row; overflow: hidden;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    position: relative;
+  }
+  .prop-card:hover { border-color: var(--color-border-secondary); }
+
+  .prop-card.rating-top { border-left: 3px solid #1D9E75; }
+  .prop-card.rating-good { border-left: 3px solid #378ADD; }
+  .prop-card.rating-mid { border-left: 3px solid #BA7517; }
+  .prop-card.rating-low { border-left: 3px solid #E24B4A; }
+
+  .prop-img {
+    width: 90px; min-width: 90px;
+    background: var(--color-background-secondary);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 4px; position: relative;
+  }
+  .prop-img .img-icon { font-size: 28px; color: var(--color-text-tertiary); }
+  .prop-img .img-type { font-size: 10px; color: var(--color-text-tertiary); }
+
+  .badge-rehab {
+    position: absolute; top: 6px; left: 50%; transform: translateX(-50%);
+    font-size: 9px; padding: 2px 6px; border-radius: 10px; white-space: nowrap;
+    font-weight: 500;
+  }
+  .badge-rehab.si { background: #EAF3DE; color: #3B6D11; }
+  .badge-rehab.no { background: #FCEBEB; color: #A32D2D; }
+  .badge-rehab.parcial { background: #FAEEDA; color: #854F0B; }
+
+  .prop-main { flex: 1; padding: 10px 10px 8px; min-width: 0; }
+
+  .prop-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 6px; }
+
+  .prop-price { font-size: 15px; font-weight: 500; color: var(--color-text-primary); }
+  .prop-ppm { font-size: 11px; color: var(--color-text-secondary); margin-top: 1px; }
+
+  .rating-badge {
+    display: flex; flex-direction: column; align-items: center;
+    min-width: 46px;
+  }
+  .rating-score {
+    font-size: 20px; font-weight: 500; line-height: 1;
+  }
+  .rating-stars { font-size: 10px; letter-spacing: 1px; }
+  .rating-label { font-size: 9px; font-weight: 500; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .rating-score.top { color: #0F6E56; }
+  .rating-score.good { color: #185FA5; }
+  .rating-score.mid { color: #BA7517; }
+  .rating-score.low { color: #A32D2D; }
+
+  .rating-label.top { color: #0F6E56; }
+  .rating-label.good { color: #185FA5; }
+  .rating-label.mid { color: #BA7517; }
+  .rating-label.low { color: #A32D2D; }
+
+  .prop-loc {
+    font-size: 12px; color: var(--color-text-secondary);
+    display: flex; align-items: center; gap: 4px; margin-bottom: 6px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+
+  .prop-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px 6px;
+    margin-bottom: 6px;
+  }
+  .prop-stat { }
+  .prop-stat-label { font-size: 10px; color: var(--color-text-tertiary); }
+  .prop-stat-val { font-size: 12px; font-weight: 500; color: var(--color-text-primary); }
+
+  .prop-bottom { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .tag {
+    font-size: 10px; padding: 2px 8px; border-radius: 10px;
+    background: var(--color-background-secondary);
+    color: var(--color-text-secondary);
+    border: 0.5px solid var(--color-border-tertiary);
+  }
+  .tag.yield-high { background: #EAF3DE; color: #3B6D11; border-color: #C0DD97; }
+  .tag.yield-med { background: #E6F1FB; color: #185FA5; border-color: #B5D4F4; }
+  .tag.yield-low { background: #FAEEDA; color: #854F0B; border-color: #FAC775; }
+
+  .rentab {
+    margin-left: auto; font-size: 13px; font-weight: 500;
+  }
+  .rentab.high { color: #0F6E56; }
+  .rentab.med { color: #185FA5; }
+  .rentab.low { color: #BA7517; }
+
+  .mp-pagination {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    margin-top: 1rem; padding-top: 0.75rem;
+    border-top: 0.5px solid var(--color-border-tertiary);
+  }
+  .page-btn {
+    width: 30px; height: 30px; border-radius: 6px; font-size: 13px;
+    border: 0.5px solid var(--color-border-secondary);
+    background: var(--color-background-primary);
+    color: var(--color-text-secondary); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.1s;
+  }
+  .page-btn.active { background: #185FA5; color: #E6F1FB; border-color: #185FA5; }
+  .page-btn:hover:not(.active) { background: var(--color-background-secondary); }
+  .page-info { font-size: 12px; color: var(--color-text-tertiary); }
+
+  .mp-summary {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+    margin-bottom: 1rem;
+  }
+  .summ-card {
+    background: var(--color-background-secondary);
+    border-radius: var(--border-radius-md);
+    padding: 10px 12px;
+  }
+  .summ-label { font-size: 11px; color: var(--color-text-secondary); margin-bottom: 4px; }
+  .summ-val { font-size: 18px; font-weight: 500; color: var(--color-text-primary); }
+  .summ-sub { font-size: 11px; color: var(--color-text-tertiary); margin-top: 2px; }
+</style>
+
+<h2 class="sr-only">Marketplace de oportunidades de inversión inmobiliaria con tarjetas de propiedades, rating, rentabilidad y parámetros clave</h2>
+
+<div class="mp-header">
+  <div class="mp-header-top">
+    <div>
+      <div class="mp-title"><i class="ti ti-building-estate" aria-hidden="true" style="font-size:18px; vertical-align:-2px; margin-right:6px; color:#185FA5"></i>Oportunidades de inversión</div>
+      <div class="mp-subtitle">Zona analizada · Ordenadas por rating inversor</div>
+    </div>
+  </div>
+  <div class="mp-filters">
+    <button class="filter-btn active" onclick="filterProps('all', this)">Todas (20)</button>
+    <button class="filter-btn" onclick="filterProps('top', this)"><i class="ti ti-star-filled" style="font-size:11px; color:#1D9E75"></i> Excelente</button>
+    <button class="filter-btn" onclick="filterProps('good', this)">Buena oport.</button>
+    <button class="filter-btn" onclick="filterProps('rehab', this)">Rehabilitado</button>
+    <button class="filter-btn" onclick="filterProps('yield', this)">+ Rentabilidad</button>
+    <select class="sort-select" onchange="sortProps(this.value)">
+      <option value="rating">Ordenar: Rating</option>
+      <option value="price_asc">Precio ↑</option>
+      <option value="price_desc">Precio ↓</option>
+      <option value="yield">Rentabilidad</option>
+      <option value="ppm">€/m²</option>
+    </select>
+  </div>
+</div>
+
+<div class="mp-summary">
+  <div class="summ-card">
+    <div class="summ-label"><i class="ti ti-home" aria-hidden="true" style="font-size:13px; vertical-align:-1px"></i> Propiedades</div>
+    <div class="summ-val" id="total-count">20</div>
+    <div class="summ-sub">en zona analizada</div>
+  </div>
+  <div class="summ-card">
+    <div class="summ-label"><i class="ti ti-trending-up" aria-hidden="true" style="font-size:13px; vertical-align:-1px"></i> Rentab. media</div>
+    <div class="summ-val" id="avg-yield">6.8%</div>
+    <div class="summ-sub">bruta estimada</div>
+  </div>
+  <div class="summ-card">
+    <div class="summ-label"><i class="ti ti-cash" aria-hidden="true" style="font-size:13px; vertical-align:-1px"></i> Precio medio</div>
+    <div class="summ-val" id="avg-price">187k€</div>
+    <div class="summ-sub">por propiedad</div>
+  </div>
+  <div class="summ-card">
+    <div class="summ-label"><i class="ti ti-building" aria-hidden="true" style="font-size:13px; vertical-align:-1px"></i> €/m² medio</div>
+    <div class="summ-val" id="avg-ppm">1.820</div>
+    <div class="summ-sub">zona vs. 2.100€ mercado</div>
+  </div>
+</div>
+
+<div class="mp-grid" id="prop-grid"></div>
+
+<div class="mp-pagination" id="pagination"></div>
+
+<script>
+const ALL_PROPS = [
+  { id:1, precio:145000, m2:78, hab:3, ban:1, planta:"2º", ano:1978, zona:"Nou Barris Nord", calle:"C/ Artesania", estado:"Bueno", rehab:"Sí", alquiler:950, rating:9.4, ratingClass:"top", tipo:"piso", ocup:"Libre", cert:"D", obs:["Garaje incl.","Ascensor"] },
+  { id:2, precio:162000, m2:85, hab:3, ban:2, planta:"4º", ano:1985, zona:"Gracia Alta", calle:"C/ Torrent de l'Olla", estado:"Muy bueno", rehab:"Sí", alquiler:1050, rating:9.1, ratingClass:"top", tipo:"piso", ocup:"Libre", cert:"C", obs:["Terraza","Luminoso"] },
+  { id:3, precio:129000, m2:65, hab:2, ban:1, planta:"1º", ano:1965, zona:"Sant Andreu", calle:"Pg. Torras i Bages", estado:"Reformar", rehab:"No", alquiler:800, rating:8.7, ratingClass:"top", tipo:"piso", ocup:"Libre", cert:"E", obs:["Precio bajo m²","Potencial alto"] },
+  { id:4, precio:198000, m2:92, hab:3, ban:2, planta:"5º", ano:1992, zona:"Sants", calle:"C/ Sants", estado:"Excelente", rehab:"Sí", alquiler:1180, rating:8.5, ratingClass:"top", tipo:"piso", ocup:"Alquilado", cert:"B", obs:["Renta en curso","Atico"] },
+  { id:5, precio:175000, m2:88, hab:3, ban:1, planta:"3º", ano:1975, zona:"Horta", calle:"C/ Varsovia", estado:"Bueno", rehab:"Parcial", alquiler:1020, rating:8.2, ratingClass:"good", tipo:"piso", ocup:"Libre", cert:"D", obs:["Obra menor","Terraza"] },
+  { id:6, precio:210000, m2:98, hab:4, ban:2, planta:"PB", ano:2001, zona:"Poblenou", calle:"C/ Pallars", estado:"Muy bueno", rehab:"Sí", alquiler:1250, rating:8.0, ratingClass:"good", tipo:"piso", ocup:"Libre", cert:"C", obs:["Patio","Metro 5 min"] },
+  { id:7, precio:155000, m2:72, hab:2, ban:1, planta:"2º", ano:1968, zona:"Nou Barris", calle:"C/ Aiguablava", estado:"Bueno", rehab:"Parcial", alquiler:870, rating:7.8, ratingClass:"good", tipo:"piso", ocup:"Libre", cert:"E", obs:["Precio competitivo"] },
+  { id:8, precio:189000, m2:80, hab:3, ban:2, planta:"6º", ano:1988, zona:"Eixample", calle:"C/ Aragó", estado:"Reformado", rehab:"Sí", alquiler:1150, rating:7.5, ratingClass:"good", tipo:"piso", ocup:"Libre", cert:"C", obs:["Vistas","Ascensor nuevo"] },
+  { id:9, precio:245000, m2:105, hab:4, ban:2, planta:"3º", ano:1995, zona:"Sarrià", calle:"C/ Major de Sarrià", estado:"Excelente", rehab:"Sí", alquiler:1350, rating:7.2, ratingClass:"good", tipo:"piso", ocup:"Libre", cert:"B", obs:["Zona premium","Aparcamiento"] },
+  { id:10, precio:138000, m2:60, hab:2, ban:1, planta:"4º", ano:1971, zona:"Les Corts", calle:"C/ Dolors Masferrer", estado:"Regular", rehab:"No", alquiler:760, rating:7.0, ratingClass:"good", tipo:"piso", ocup:"Libre", cert:"F", obs:["Reform. integral","Precio mínimo zona"] },
+  { id:11, precio:265000, m2:115, hab:4, ban:3, planta:"5º", ano:2005, zona:"Sant Gervasi", calle:"C/ Mandri", estado:"Excelente", rehab:"Sí", alquiler:1480, rating:6.8, ratingClass:"mid", tipo:"piso", ocup:"Libre", cert:"A", obs:["Lujo","Doble garaje"] },
+  { id:12, precio:172000, m2:75, hab:3, ban:1, planta:"2º", ano:1980, zona:"Clot", calle:"C/ Clot", estado:"Bueno", rehab:"Parcial", alquiler:920, rating:6.5, ratingClass:"mid", tipo:"piso", ocup:"Libre", cert:"D", obs:["Reforma baño"] },
+  { id:13, precio:195000, m2:90, hab:3, ban:2, planta:"1º", ano:1990, zona:"Gràcia", calle:"C/ Verdi", estado:"Bueno", rehab:"Sí", alquiler:1100, rating:6.3, ratingClass:"mid", tipo:"piso", ocup:"Alquilado", cert:"C", obs:["Renta baja actual","Turístico potencial"] },
+  { id:14, precio:118000, m2:55, hab:2, ban:1, planta:"3º", ano:1960, zona:"Raval", calle:"C/ Hospital", estado:"Reformar", rehab:"No", alquiler:680, rating:6.0, ratingClass:"mid", tipo:"piso", ocup:"Libre", cert:"G", obs:["Alto riesgo","Mucha obra"] },
+  { id:15, precio:220000, m2:95, hab:4, ban:2, planta:"7º", ano:1998, zona:"Diagonal Mar", calle:"C/ Selva de Mar", estado:"Muy bueno", rehab:"Sí", alquiler:1200, rating:5.8, ratingClass:"mid", tipo:"piso", ocup:"Libre", cert:"B", obs:["Alto precio zona","Sobrecoste"] },
+  { id:16, precio:285000, m2:120, hab:4, ban:3, planta:"4º", ano:2010, zona:"Pedralbes", calle:"Av. Pedralbes", estado:"Excelente", rehab:"Sí", alquiler:1500, rating:5.5, ratingClass:"mid", tipo:"piso", ocup:"Libre", cert:"A", obs:["Precio alto","Zona saturada"] },
+  { id:17, precio:149000, m2:68, hab:2, ban:1, planta:"1º", ano:1972, zona:"Trinitat", calle:"C/ Nòria", estado:"Regular", rehab:"No", alquiler:720, rating:4.8, ratingClass:"low", tipo:"piso", ocup:"Libre", cert:"F", obs:["Zona deprimida","Alto vaciado"] },
+  { id:18, precio:168000, m2:74, hab:3, ban:1, planta:"2º", ano:1982, zona:"La Mina", calle:"C/ Cristóbal de Moura", estado:"Regular", rehab:"Parcial", alquiler:800, rating:4.5, ratingClass:"low", tipo:"piso", ocup:"Libre", cert:"E", obs:["Riesgo elevado","Zona conflictiva"] },
+  { id:19, precio:310000, m2:130, hab:5, ban:3, planta:"5º", ano:2015, zona:"Les Glòries", calle:"C/ Castella", estado:"Excelente", rehab:"Sí", alquiler:1600, rating:4.2, ratingClass:"low", tipo:"piso", ocup:"Libre", cert:"A", obs:["Sobreprecio claro","Rentab. mínima"] },
+  { id:20, precio:125000, m2:58, hab:2, ban:1, planta:"Bj", ano:1958, zona:"Badalona", calle:"C/ Prim", estado:"Reformar", rehab:"No", alquiler:620, rating:3.9, ratingClass:"low", tipo:"piso", ocup:"Libre", cert:"G", obs:["Bajo sótano","Humedad"] },
+];
+
+let filtered = [...ALL_PROPS];
+let currentPage = 1;
+const PER_PAGE = 10;
+
+function yieldPct(p) {
+  return ((p.alquiler * 12) / p.precio * 100).toFixed(1);
+}
+function ppm(p) {
+  return Math.round(p.precio / p.m2);
+}
+function yieldClass(y) {
+  const n = parseFloat(y);
+  if (n >= 7) return 'yield-high';
+  if (n >= 5.5) return 'yield-med';
+  return 'yield-low';
+}
+function rentabClass(y) {
+  const n = parseFloat(y);
+  if (n >= 7) return 'high';
+  if (n >= 5.5) return 'med';
+  return 'low';
+}
+function ratingStars(r) {
+  const full = Math.round(r / 2);
+  return '★'.repeat(full) + '☆'.repeat(5 - full);
+}
+function ratingLabel(rc) {
+  return {top:'Excelente', good:'Buena', mid:'Regular', low:'Débil'}[rc];
+}
+
+function buildCard(p) {
+  const yp = yieldPct(p);
+  const pm = ppm(p);
+  const rc = p.ratingClass;
+  const rehab = p.rehab === 'Sí' ? 'si' : p.rehab === 'No' ? 'no' : 'parcial';
+  const tagYield = `<span class="tag ${yieldClass(yp)}">${yp}% bruto</span>`;
+  const tagOcup = `<span class="tag">${p.ocup}</span>`;
+  const tagCert = `<span class="tag">Cert. ${p.cert}</span>`;
+  const obs = p.obs.slice(0,2).map(o => `<span class="tag">${o}</span>`).join('');
+  const iconMap = { piso:'ti-building', casa:'ti-home', local:'ti-store' };
+
+  return `<div class="prop-card rating-${rc}">
+    <div class="prop-img">
+      <span class="badge-rehab ${rehab}">${p.rehab === 'Sí' ? '✓ Rehab.' : p.rehab === 'No' ? '✗ S/Rehab' : '~ Parcial'}</span>
+      <i class="ti ${iconMap[p.tipo] || 'ti-building'} img-icon" aria-hidden="true"></i>
+      <span class="img-type">${p.m2}m² · ${p.hab}h</span>
+    </div>
+    <div class="prop-main">
+      <div class="prop-top">
+        <div>
+          <div class="prop-price">${(p.precio/1000).toFixed(0)}k€</div>
+          <div class="prop-ppm">${pm.toLocaleString()}€/m²</div>
+        </div>
+        <div class="rating-badge">
+          <span class="rating-score ${rc}">${p.rating.toFixed(1)}</span>
+          <span class="rating-stars" style="color:${rc==='top'?'#1D9E75':rc==='good'?'#378ADD':rc==='mid'?'#BA7517':'#E24B4A'}">${ratingStars(p.rating)}</span>
+          <span class="rating-label ${rc}">${ratingLabel(rc)}</span>
+        </div>
+      </div>
+      <div class="prop-loc">
+        <i class="ti ti-map-pin" aria-hidden="true" style="font-size:12px; flex-shrink:0"></i>
+        <span>${p.zona} · ${p.calle} · ${p.planta}</span>
+      </div>
+      <div class="prop-grid">
+        <div class="prop-stat">
+          <div class="prop-stat-label">Alquiler est.</div>
+          <div class="prop-stat-val">${p.alquiler}€/mes</div>
+        </div>
+        <div class="prop-stat">
+          <div class="prop-stat-label">Año constr.</div>
+          <div class="prop-stat-val">${p.ano}</div>
+        </div>
+        <div class="prop-stat">
+          <div class="prop-stat-label">Estado</div>
+          <div class="prop-stat-val">${p.estado}</div>
+        </div>
+        <div class="prop-stat">
+          <div class="prop-stat-label">Habitaciones</div>
+          <div class="prop-stat-val">${p.hab}h · ${p.ban}b</div>
+        </div>
+        <div class="prop-stat">
+          <div class="prop-stat-label">Planta</div>
+          <div class="prop-stat-val">${p.planta}</div>
+        </div>
+        <div class="prop-stat">
+          <div class="prop-stat-label">Ocupación</div>
+          <div class="prop-stat-val">${p.ocup}</div>
+        </div>
+      </div>
+      <div class="prop-bottom">
+        ${tagYield}${tagOcup}${tagCert}${obs}
+        <span class="rentab ${rentabClass(yp)}" style="margin-left:auto; font-size:13px">${yp}%</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+function render() {
+  const start = (currentPage - 1) * PER_PAGE;
+  const end = start + PER_PAGE;
+  const page = filtered.slice(start, end);
+  document.getElementById('prop-grid').innerHTML = page.map(buildCard).join('');
+  renderPagination();
+  document.getElementById('total-count').textContent = filtered.length;
+  if (filtered.length > 0) {
+    const avgY = (filtered.reduce((s,p) => s + parseFloat(yieldPct(p)), 0) / filtered.length).toFixed(1);
+    const avgP = Math.round(filtered.reduce((s,p) => s + p.precio, 0) / filtered.length / 1000);
+    const avgPm = Math.round(filtered.reduce((s,p) => s + ppm(p), 0) / filtered.length);
+    document.getElementById('avg-yield').textContent = avgY + '%';
+    document.getElementById('avg-price').textContent = avgP + 'k€';
+    document.getElementById('avg-ppm').textContent = avgPm.toLocaleString();
+  }
+}
+
+function renderPagination() {
+  const total = Math.ceil(filtered.length / PER_PAGE);
+  const pg = document.getElementById('pagination');
+  if (total <= 1) { pg.innerHTML = ''; return; }
+  let html = `<button class="page-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''} aria-label="Página anterior"><i class="ti ti-chevron-left" aria-hidden="true"></i></button>`;
+  for (let i = 1; i <= total; i++) {
+    html += `<button class="page-btn ${i===currentPage?'active':''}" onclick="goPage(${i})">${i}</button>`;
+  }
+  html += `<button class="page-btn" onclick="goPage(${currentPage+1})" ${currentPage===total?'disabled':''} aria-label="Página siguiente"><i class="ti ti-chevron-right" aria-hidden="true"></i></button>`;
+  html += `<span class="page-info">${(currentPage-1)*PER_PAGE+1}–${Math.min(currentPage*PER_PAGE, filtered.length)} de ${filtered.length}</span>`;
+  pg.innerHTML = html;
+}
+
+function goPage(n) {
+  const total = Math.ceil(filtered.length / PER_PAGE);
+  if (n < 1 || n > total) return;
+  currentPage = n;
+  render();
+}
+
+function filterProps(type, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (type === 'all') filtered = [...ALL_PROPS];
+  else if (type === 'top') filtered = ALL_PROPS.filter(p => p.ratingClass === 'top');
+  else if (type === 'good') filtered = ALL_PROPS.filter(p => ['top','good'].includes(p.ratingClass));
+  else if (type === 'rehab') filtered = ALL_PROPS.filter(p => p.rehab === 'Sí');
+  else if (type === 'yield') filtered = ALL_PROPS.filter(p => parseFloat(yieldPct(p)) >= 6.5);
+  currentPage = 1;
+  render();
+}
+
+function sortProps(val) {
+  if (val === 'rating') filtered.sort((a,b) => b.rating - a.rating);
+  else if (val === 'price_asc') filtered.sort((a,b) => a.precio - b.precio);
+  else if (val === 'price_desc') filtered.sort((a,b) => b.precio - a.precio);
+  else if (val === 'yield') filtered.sort((a,b) => parseFloat(yieldPct(b)) - parseFloat(yieldPct(a)));
+  else if (val === 'ppm') filtered.sort((a,b) => ppm(a) - ppm(b));
+  currentPage = 1;
+  render();
+}
+
+render();
+</script>

@@ -163,6 +163,41 @@ def send_telegram(text: str) -> bool:
         return False
 
 # ---------------------------------------------------------------------------
+# Canal público (publicación de informes)
+# ---------------------------------------------------------------------------
+
+def publish_to_channel(text: str) -> bool:
+    """Publica un mensaje en el canal público de Telegram."""
+    if not config.telegram.channel_enabled:
+        log.debug("telegram_channel_skipped_not_configured")
+        return False
+
+    try:
+        import httpx
+    except ImportError:
+        log.error("httpx_not_installed_telegram_disabled")
+        return False
+
+    url = f"https://api.telegram.org/bot{config.telegram.bot_token}/sendMessage"
+    payload = {
+        "chat_id": config.telegram.channel_id,
+        "text": text,
+        "disable_web_page_preview": False,
+        "parse_mode": "HTML",
+    }
+    try:
+        r = httpx.post(url, json=payload, timeout=15)
+        if r.status_code >= 400:
+            log.error("telegram_channel_failed", extra={"status": r.status_code, "body": r.text[:200]})
+            return False
+        log.info("telegram_channel_published", extra={"channel_id": config.telegram.channel_id})
+        return True
+    except Exception as exc:  # noqa: BLE001
+        log.error("telegram_channel_failed", extra={"error": str(exc)})
+        return False
+
+
+# ---------------------------------------------------------------------------
 # Orquestador
 # ---------------------------------------------------------------------------
 

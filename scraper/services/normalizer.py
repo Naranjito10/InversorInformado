@@ -132,6 +132,29 @@ def detect_cee(text: str) -> Optional[str]:
     return None
 
 
+_HOUSE_SUBTYPES = {"house", "chalet", "semidetached_house", "terraced_house", "villa", "country_house", "farm"}
+_FLAT_SUBTYPES = {"flat", "duplex", "penthouse", "ground_floor", "studio", "apartment", "loft"}
+
+_HOUSE_TITLE_WORDS = ["chalet", "villa", "adosado", "unifamiliar", "casa independiente"]
+_FLAT_TITLE_WORDS = ["piso", "apartamento", "estudio", "loft", "dúplex", "duplex"]
+
+
+def detect_tipo_propiedad(raw_subtype: Any, titulo: str, url: str) -> Optional[str]:
+    """Detecta si es Casa o Piso a partir del subtipo crudo, título o URL."""
+    if raw_subtype:
+        s = str(raw_subtype).lower().replace("-", "_")
+        if s in _HOUSE_SUBTYPES or "house" in s or "chalet" in s or "villa" in s:
+            return "Casa"
+        if s in _FLAT_SUBTYPES or "flat" in s or "apartment" in s:
+            return "Piso"
+    text = ((titulo or "") + " " + (url or "")).lower()
+    if any(w in text for w in _HOUSE_TITLE_WORDS):
+        return "Casa"
+    if any(w in text for w in _FLAT_TITLE_WORDS):
+        return "Piso"
+    return None
+
+
 _PLANTA_MAP = {
     "0": "Bajo", "bajo": "Bajo", "planta baja": "Bajo", "pb": "Bajo",
     "entresuulo": "Entresuelo", "entresuelo": "Entresuelo",
@@ -206,6 +229,11 @@ def normalize(source: str, raw: dict[str, Any]) -> Listing:
         habitaciones=clean_int(raw.get("habitaciones") or raw.get("rooms")),
         banos=clean_int(raw.get("banos") or raw.get("bathrooms")),
         planta=normalize_planta(raw.get("planta") if raw.get("planta") is not None else raw.get("floor")),
+        tipo_propiedad=detect_tipo_propiedad(
+            raw.get("tipo_propiedad"),
+            raw.get("titulo") or raw.get("title") or "",
+            str(raw.get("url", "")),
+        ),
         ascensor=raw.get("ascensor") if isinstance(raw.get("ascensor"), bool) else feats["ascensor"],
         terraza=raw.get("terraza") if isinstance(raw.get("terraza"), bool) else feats["terraza"],
         garaje=raw.get("garaje") if isinstance(raw.get("garaje"), bool) else feats["garaje"],

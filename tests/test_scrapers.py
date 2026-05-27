@@ -52,35 +52,44 @@ IDEALISTA_HTML = """
 </body></html>
 """
 
-FOTOCASA_NEXT_DATA = {
-    "props": {
-        "pageProps": {
-            "initialSearch": {
-                "result": {
-                    "realEstates": [
-                        {
-                            "link": "/d/piso-venta-barcelona/123",
-                            "title": "Piso en venta en Barcelona",
-                            "transactions": [{"value": 250000}],
-                            "features": {
-                                "surface": 80,
-                                "rooms": 3,
-                                "bathrooms": 2,
-                                "elevator": True,
-                                "terrace": False,
-                                "parking": False,
-                                "conservationState": "buen estado",
-                                "energyCertificate": {"rating": "C"},
-                            },
-                            "address": {
-                                "neighborhood": {"name": "Gracia"},
-                                "town": {"name": "Barcelona"},
-                                "province": {"name": "Barcelona"},
-                            },
-                            "coordinates": {"latitude": 41.4, "longitude": 2.15},
-                        }
-                    ]
+FOTOCASA_INITIAL_PROPS = {
+    "initialSearch": {
+        "result": {
+            "realEstates": [
+                {
+                    "realEstateAdId": "123",
+                    "detail": {
+                        "es-ES": "/d/piso-venta-barcelona/123"
+                    },
+                    "rawPrice": 250000,
+                    "address": {
+                        "neighborhood": "Gracia",
+                        "municipality": "Barcelona",
+                        "province": "Barcelona"
+                    },
+                    "coordinates": {
+                        "latitude": 41.4,
+                        "longitude": 2.15
+                    }
                 }
+            ],
+            "resultsV2": {
+                "items": [
+                    {
+                        "realEstateAdId": "123",
+                        "features": {
+                            "surface": 80,
+                            "rooms": 3,
+                            "bathrooms": 2,
+                            "floor": "3",
+                            "elevator": True,
+                            "terrace": False,
+                            "parking": False,
+                            "conservationState": "buen estado",
+                            "energyCertificate": {"rating": "C"}
+                        }
+                    }
+                ]
             }
         }
     }
@@ -88,11 +97,7 @@ FOTOCASA_NEXT_DATA = {
 
 FOTOCASA_HTML = f"""
 <html><body>
-  <script id="__NEXT_DATA__" type="application/json">{json.dumps(FOTOCASA_NEXT_DATA)}</script>
-  <article class="re-CardPack">
-    <a href="/d/piso-en-barcelona/456" title="Piso fallback">Piso fallback</a>
-    <span class="re-CardPrice">220.000 €</span>
-  </article>
+  <script id="__initial_props__" type="application/json">{json.dumps(FOTOCASA_INITIAL_PROPS)}</script>
 </body></html>
 """
 
@@ -100,18 +105,16 @@ HABITACLIA_HTML = """
 <html><body>
   <ul>
     <li class="list-item">
-      <article class="list-item-container">
-        <a href="/vivienda-en-gracia-barcelona/99887" class="list-item-title">
-          Piso en Gracia
-        </a>
-        <span class="list-item-price">195.000 €</span>
-        <ul class="list-feature">
-          <li>70 m²</li>
-          <li>3 hab.</li>
-          <li>1 baño</li>
-          <li>Planta 1</li>
-        </ul>
-        <span class="list-item-location">Gracia, Barcelona</span>
+      <article class="list-item-container" data-href="/vivienda-en-gracia-barcelona/99887">
+        <h3 class="list-item-title">
+          <a href="/vivienda-en-gracia-barcelona/99887">
+            Piso en Gracia
+          </a>
+        </h3>
+        <span itemprop="price">195.000 €</span>
+        <p class="list-item-feature">70 m² - 3 habitaciones - 1 baño - Planta 1</p>
+        <p class="list-item-location">Barcelona - Gracia</p>
+        <p class="list-item-description">Bonito piso en Gracia...</p>
       </article>
     </li>
   </ul>

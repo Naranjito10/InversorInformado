@@ -83,10 +83,15 @@ class EmailConfig:
 class TelegramConfig:
     bot_token: str = ""
     chat_id: str = ""
+    channel_id: str = ""
 
     @property
     def enabled(self) -> bool:
         return bool(self.bot_token and self.chat_id)
+
+    @property
+    def channel_enabled(self) -> bool:
+        return bool(self.bot_token and self.channel_id)
 
 
 @dataclass
@@ -144,6 +149,7 @@ class AppConfig:
             telegram=TelegramConfig(
                 bot_token=os.getenv("TELEGRAM_BOT_TOKEN", ""),
                 chat_id=os.getenv("TELEGRAM_CHAT_ID", ""),
+                channel_id=os.getenv("TELEGRAM_CHANNEL_ID", ""),
             ),
             alerts=AlertConfig(
                 min_score_high=_get_int("ALERT_MIN_SCORE_HIGH", 80),

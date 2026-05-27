@@ -30,6 +30,7 @@ class Listing(BaseModel):
     habitaciones: Optional[int] = None
     banos: Optional[int] = None
     planta: Optional[str] = None
+    tipo_propiedad: Optional[str] = None  # "Piso" | "Casa" | "Ático" | etc.
     ascensor: Optional[bool] = None
     terraza: Optional[bool] = None
     garaje: Optional[bool] = None
