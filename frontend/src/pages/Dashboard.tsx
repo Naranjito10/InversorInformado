@@ -21,13 +21,22 @@ export default function Dashboard() {
     try {
       await exportExcel(filters);
     } catch (err: unknown) {
-      const axiosErr = err as { response?: { status: number; data?: { detail?: string } } };
-      const detail = axiosErr?.response?.data?.detail;
+      const axiosErr = err as { response?: { status: number; data?: unknown } };
       const status = axiosErr?.response?.status;
+      let detail = "";
+      const data = axiosErr?.response?.data;
+      if (data instanceof Blob) {
+        try {
+          const text = await data.text();
+          detail = JSON.parse(text)?.detail ?? text;
+        } catch {
+          detail = "";
+        }
+      }
       const msg = detail
         ? `Error ${status}:\n${detail}`
         : status
-        ? `Error ${status}: el backend devolvió un error.`
+        ? `Error ${status}: fallo interno del backend.`
         : `Error de conexión: no se pudo contactar con el servidor.`;
       alert(msg);
     } finally {
