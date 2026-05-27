@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import {
   fetchReport, fetchReportHtmlBlob, downloadReportPdf, publishReportToTelegram
@@ -8,7 +8,9 @@ import type { Report } from "../types";
 
 export default function InformeDetalle() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [previewError, setPreviewError] = useState<string | null>(null);
   const [published, setPublished] = useState(false);
   const blobUrlRef = useRef<string | null>(null);
 
@@ -20,10 +22,14 @@ export default function InformeDetalle() {
 
   useEffect(() => {
     if (!id) return;
-    fetchReportHtmlBlob(id).then((url) => {
-      setBlobUrl(url);
-      blobUrlRef.current = url;
-    });
+    fetchReportHtmlBlob(id)
+      .then((url) => {
+        setBlobUrl(url);
+        blobUrlRef.current = url;
+      })
+      .catch((err) => {
+        setPreviewError(err?.message ?? "Error al cargar el preview");
+      });
     return () => {
       if (blobUrlRef.current) URL.revokeObjectURL(blobUrlRef.current);
     };
@@ -46,6 +52,14 @@ export default function InformeDetalle() {
 
   return (
     <div className="flex flex-col gap-5">
+      {/* Back nav */}
+      <button
+        onClick={() => navigate("/informes")}
+        className="self-start flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors"
+      >
+        ← Volver a Informes
+      </button>
+
       {/* Header */}
       <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col md:flex-row md:items-center gap-4">
         <div className="flex-1">
@@ -107,6 +121,10 @@ export default function InformeDetalle() {
             className="w-full"
             style={{ height: "calc(297mm * 2 + 40px)", border: "none" }}
           />
+        </div>
+      ) : previewError ? (
+        <div className="bg-red-50 border border-red-200 rounded-xl h-32 flex items-center justify-center">
+          <p className="text-sm text-red-500">Error al cargar preview: {previewError}</p>
         </div>
       ) : (
         <div className="bg-gray-50 border border-gray-200 rounded-xl h-96 flex items-center justify-center">
