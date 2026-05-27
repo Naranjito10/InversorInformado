@@ -21,10 +21,14 @@ export default function Dashboard() {
     try {
       await exportExcel(filters);
     } catch (err: unknown) {
-      const msg =
-        (err as { response?: { status: number; data?: unknown } })?.response?.status
-          ? `Error ${(err as { response: { status: number } }).response.status}: el backend devolvió un error.`
-          : `Error de conexión: no se pudo contactar con el servidor.`;
+      const axiosErr = err as { response?: { status: number; data?: { detail?: string } } };
+      const detail = axiosErr?.response?.data?.detail;
+      const status = axiosErr?.response?.status;
+      const msg = detail
+        ? `Error ${status}:\n${detail}`
+        : status
+        ? `Error ${status}: el backend devolvió un error.`
+        : `Error de conexión: no se pudo contactar con el servidor.`;
       alert(msg);
     } finally {
       setExporting(false);
