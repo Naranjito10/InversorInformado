@@ -4,10 +4,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Optional
 
-from pydantic import BaseModel, Field, HttpUrl, field_validator
-
-
-VALID_ESTADOS = {"nuevo", "buen estado", "a reformar", None}
+from pydantic import BaseModel, field_validator
 
 
 class Listing(BaseModel):
@@ -30,12 +27,48 @@ class Listing(BaseModel):
     habitaciones: Optional[int] = None
     banos: Optional[int] = None
     planta: Optional[str] = None
-    tipo_propiedad: Optional[str] = None  # "Piso" | "Casa" | "Ático" | etc.
+    tipo_propiedad: Optional[str] = None
+
+    # Extras — base
     ascensor: Optional[bool] = None
     terraza: Optional[bool] = None
     garaje: Optional[bool] = None
-    estado: Optional[str] = None
+    garaje_incluido: Optional[bool] = None
+    num_plazas_garaje: Optional[int] = None
     certificado_energetico: Optional[str] = None
+
+    # Extras — interiores
+    balcon: Optional[bool] = None
+    trastero: Optional[bool] = None
+    armarios_empotrados: Optional[bool] = None
+    aire_acondicionado: Optional[bool] = None
+    calefaccion: Optional[bool] = None
+    calefaccion_tipo: Optional[str] = None
+    cocina_equipada: Optional[bool] = None
+    amueblado: Optional[bool] = None
+
+    # Extras — edificio
+    exterior: Optional[bool] = None
+    orientacion: Optional[str] = None
+    portero: Optional[bool] = None
+    puerta_blindada: Optional[bool] = None
+    doble_acristalamiento: Optional[bool] = None
+    adaptado_movilidad: Optional[bool] = None
+
+    # Extras — zonas exteriores / comunidad
+    jardin: Optional[bool] = None
+    piscina: Optional[bool] = None
+    piscina_comunitaria: Optional[bool] = None
+    zonas_verdes_comunitarias: Optional[bool] = None
+    vigilancia: Optional[bool] = None
+
+    # Clasificacion del inmueble
+    # condition: obra_nueva | listo_para_usar | buen_estado | reforma_leve | reforma_integral | reforma_estructural
+    condition: Optional[str] = None
+    # ocupacion: libre | ocupado | alquilado | nuda_propiedad
+    ocupacion: Optional[str] = None
+    # situacion_legal: libre_cargas | con_hipoteca | en_construccion | renta_antigua | vpo | subasta | litigio | herencia
+    situacion_legal: Optional[str] = None
 
     # Localizacion
     barrio: Optional[str] = None
@@ -60,29 +93,18 @@ class Listing(BaseModel):
     campos_vacios: Optional[int] = None
     primera_deteccion: Optional[datetime] = None
     ultima_actualizacion: Optional[datetime] = None
-    activo: bool = True
 
-    # Deduplicación
-    pending_review: bool = False
+    # Estado del registro en BD
+    # status: activo | pendiente_revision | reservado | en_pausa | inactivo | descartado
+    status: str = "activo"
+    # disabled_reason: duplicado_nuevo_elegido | duplicado_antiguo_elegido | no_visto_scraper | revision_manual
+    disabled_reason: Optional[str] = None
+
+    # Deduplicacion
     duplicate_candidate_of: Optional[str] = None
 
     # Datos crudos para reparsear si hace falta
     raw_data: Optional[dict[str, Any]] = None
-
-    @field_validator("estado")
-    @classmethod
-    def _normalize_estado(cls, v: Optional[str]) -> Optional[str]:
-        if v is None:
-            return None
-        v_norm = v.lower().strip()
-        # mapeo flexible
-        if "reform" in v_norm or "rehab" in v_norm:
-            return "a reformar"
-        if "obra nueva" in v_norm or "nuevo" in v_norm or "estren" in v_norm:
-            return "nuevo"
-        if "buen" in v_norm or "segunda mano" in v_norm:
-            return "buen estado"
-        return None
 
     @field_validator("certificado_energetico")
     @classmethod
@@ -95,12 +117,9 @@ class Listing(BaseModel):
         return None
 
     def to_db_dict(self) -> dict[str, Any]:
-        """Serializa para insertar en Supabase. Excluye None salvo el flag `activo`."""
+        """Serializa para insertar en Supabase. Excluye None; preserva False y status."""
         data = self.model_dump(mode="json", exclude_none=False)
-        # Mantener `activo` y `bajada_precio` aunque sean False/None
-        # Quitar None (Postgres acepta omision)
-        cleaned = {
+        return {
             k: v for k, v in data.items()
-            if v is not None or k in {"activo", "veces_visto", "bajada_precio", "pending_review"}
+            if v is not None or k in {"status", "veces_visto", "bajada_precio"}
         }
-        return cleaned
