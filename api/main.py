@@ -11,7 +11,7 @@ from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.auth import get_current_user
-from api.routers import listings, scraper, export, zones, monitor, auth, fuentes, telegram
+from api.routers import listings, scraper, export, zones, monitor, auth, fuentes, telegram, reports
 
 app = FastAPI(title="InversorInformado API", version="1.0.0")
 
@@ -37,6 +37,7 @@ app.include_router(zones.router, **_protected)
 app.include_router(monitor.router, **_protected)
 app.include_router(fuentes.router, **_protected)
 app.include_router(telegram.router, **_protected)
+app.include_router(reports.router, **_protected)
 
 
 
