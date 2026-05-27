@@ -8,12 +8,24 @@ import ListingsTable from "../components/ListingsTable";
 
 export default function Dashboard() {
   const [filters, setFilters] = useState<ListingFilters>({});
+  const [exporting, setExporting] = useState(false);
 
   const statsQuery = useQuery({ queryKey: ["stats"], queryFn: fetchStats });
   const listingsQuery = useQuery({
     queryKey: ["listings", filters],
     queryFn: () => fetchListings(filters),
   });
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      await exportExcel(filters);
+    } catch {
+      alert("Error al exportar. Inténtalo de nuevo.");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -23,10 +35,11 @@ export default function Dashboard() {
           <p className="text-sm text-gray-400">Oportunidades de inversión inmobiliaria</p>
         </div>
         <button
-          onClick={() => exportExcel(filters)}
-          className="px-4 py-2 text-sm border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+          onClick={handleExport}
+          disabled={exporting}
+          className="px-4 py-2 text-sm border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
         >
-          Exportar Excel
+          {exporting ? "Exportando..." : "Exportar Excel"}
         </button>
       </div>
 
