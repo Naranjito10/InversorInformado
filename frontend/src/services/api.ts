@@ -221,10 +221,17 @@ export const deleteFuente = async (id: string): Promise<void> => {
   await api.delete(`/fuentes/${id}`);
 };
 
-export const exportExcel = (filters: ListingFilters = {}): void => {
-  const params = new URLSearchParams();
-  Object.entries(filters).forEach(([k, v]) => {
-    if (v !== undefined && v !== null && v !== "") params.append(k, String(v));
+export const exportExcel = async (filters: ListingFilters = {}): Promise<void> => {
+  const response = await api.get("/export/excel", {
+    params: filters,
+    responseType: "blob",
   });
-  window.open(`/api/export/excel?${params.toString()}`, "_blank");
+  const url = window.URL.createObjectURL(new Blob([response.data]));
+  const link = document.createElement("a");
+  link.href = url;
+  link.setAttribute("download", "oportunidades.xlsx");
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
 };
