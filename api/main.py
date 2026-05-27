@@ -44,3 +44,8 @@ app.include_router(reports.router, **_protected)
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+# Iniciar scheduler (lunes + jueves 10:00 → publicación automática Telegram)
+from api.services.scheduler_service import init_scheduler
+init_scheduler(app)
