@@ -5,6 +5,10 @@ import SearchForm from "./pages/SearchForm";
 import Monitor from "./pages/Monitor";
 import Review from "./pages/Review";
 import Carga from "./pages/Carga";
+import Informes from "./pages/Informes";
+import InformeNuevo from "./pages/InformeNuevo";
+import InformeDetalle from "./pages/InformeDetalle";
+import Comunicaciones from "./pages/Comunicaciones";
 import Login from "./pages/Login";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { fetchPendingReview, logout } from "./services/api";
@@ -45,7 +49,7 @@ function AppLayout() {
             isActive ? "text-blue-600 font-medium" : "text-gray-500 hover:text-gray-800"
           }
         >
-          Buscar
+          Carga Automática
         </NavLink>
         <NavLink
           to="/carga"
@@ -53,7 +57,7 @@ function AppLayout() {
             isActive ? "text-blue-600 font-medium" : "text-gray-500 hover:text-gray-800"
           }
         >
-          Carga
+          Carga Manual
         </NavLink>
         <NavLink
           to="/revision"
@@ -72,6 +76,22 @@ function AppLayout() {
         >
           Monitor
         </NavLink>
+        <NavLink
+          to="/informes"
+          className={({ isActive }) =>
+            isActive ? "text-blue-600 font-medium" : "text-gray-500 hover:text-gray-800"
+          }
+        >
+          Informes
+        </NavLink>
+        <NavLink
+          to="/comunicaciones"
+          className={({ isActive }) =>
+            isActive ? "text-blue-600 font-medium" : "text-gray-500 hover:text-gray-800"
+          }
+        >
+          Comunicaciones
+        </NavLink>
 
         <button
           onClick={logout}
@@ -88,6 +108,10 @@ function AppLayout() {
           <Route path="/monitor" element={<Monitor />} />
           <Route path="/carga" element={<Carga />} />
           <Route path="/revision" element={<Review />} />
+          <Route path="/informes" element={<Informes />} />
+          <Route path="/informes/nuevo" element={<InformeNuevo />} />
+          <Route path="/informes/:id" element={<InformeDetalle />} />
+          <Route path="/comunicaciones" element={<Comunicaciones />} />
         </Routes>
       </main>
     </div>
