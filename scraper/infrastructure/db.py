@@ -61,11 +61,10 @@ def upsert_listing(listing: Listing) -> Optional[dict]:
     Inserta o actualiza una vivienda en Supabase.
 
     Logica:
-    - Si no existe: insert con primera_deteccion = ahora, veces_visto = 1
+    - Si no existe: insert con primera_deteccion = ahora, veces_visto = 1, status = 'activo'
     - Si existe: update con veces_visto +=1; si precio bajo, bajada_precio = true
+      Nunca sobrescribe status, disabled_reason ni duplicate_candidate_of en updates.
     - El trigger SQL recalcula derivados (precio_m2, rentabilidad, score, etc.)
-
-    Devuelve la fila final o None si falla.
     """
     client = get_client()
     if client is None:
@@ -80,7 +79,6 @@ def upsert_listing(listing: Listing) -> Optional[dict]:
             payload["primera_deteccion"] = now
             payload["ultima_actualizacion"] = now
             payload["veces_visto"] = 1
-            payload["activo"] = True
             res = client.table("listings").insert(payload).execute()
             log.info(
                 "listing_inserted",
@@ -93,15 +91,13 @@ def upsert_listing(listing: Listing) -> Optional[dict]:
         update_payload = {**payload}
         update_payload["veces_visto"] = (existing.get("veces_visto") or 1) + 1
         update_payload["ultima_actualizacion"] = now
-        update_payload["activo"] = True
 
-        # Mantener primera_deteccion original y estado de revisión de duplicados
-        update_payload.pop("primera_deteccion", None)
-        update_payload.pop("pending_review", None)
+        # Nunca sobrescribir en re-scrape — preservar estado gestionado manualmente
+        update_payload.pop("status", None)
+        update_payload.pop("disabled_reason", None)
         update_payload.pop("duplicate_candidate_of", None)
+        update_payload.pop("primera_deteccion", None)
 
-        # bajada_precio se calcula en el trigger SQL al detectar cambio
-        # pero por si el trigger no esta, marcamos aqui tambien:
         old_price = existing.get("precio_venta")
         new_price = listing.precio_venta
         if old_price and new_price and new_price < old_price:
@@ -131,21 +127,18 @@ def upsert_listing(listing: Listing) -> Optional[dict]:
 
 def mark_inactive(urls_seen: set[str], source: str) -> int:
     """
-    Marca como `activo=false` los anuncios de una fuente que NO se vieron
+    Marca como `status='inactivo'` los anuncios de una fuente que NO se vieron
     en el ultimo scraping (probablemente vendidos/retirados).
-
-    Llamar al final de un ciclo completo de una fuente.
     """
     client = get_client()
     if client is None:
         return 0
     try:
-        # Traer todos los activos de la fuente
         existing = (
             client.table("listings")
             .select("id,url")
             .eq("fuente", source)
-            .eq("activo", True)
+            .eq("status", "activo")
             .execute()
         )
         to_deactivate = [
@@ -154,7 +147,10 @@ def mark_inactive(urls_seen: set[str], source: str) -> int:
         ]
         if not to_deactivate:
             return 0
-        client.table("listings").update({"activo": False}).in_("id", to_deactivate).execute()
+        client.table("listings").update({
+            "status": "inactivo",
+            "disabled_reason": "no_visto_scraper",
+        }).in_("id", to_deactivate).execute()
         log.info("listings_deactivated", extra={"fuente": source, "count": len(to_deactivate)})
         return len(to_deactivate)
     except Exception as exc:  # noqa: BLE001
@@ -164,9 +160,8 @@ def mark_inactive(urls_seen: set[str], source: str) -> int:
 
 def find_near_duplicate(listing: "Listing", tolerance: float = 0.10) -> Optional[dict]:
     """
-    Busca un anuncio activo (no pendiente) que sea probablemente el mismo piso:
+    Busca un anuncio activo que sea probablemente el mismo piso:
     mismo municipio, precio y metros_cuadrados dentro de ±tolerance, habitaciones igual.
-    Requiere que listing tenga municipio, precio_venta y metros_cuadrados.
     """
     client = get_client()
     if client is None:
@@ -183,8 +178,7 @@ def find_near_duplicate(listing: "Listing", tolerance: float = 0.10) -> Optional
             client.table("listings")
             .select("url,fuente,titulo,precio_venta,metros_cuadrados,habitaciones,barrio,municipio")
             .eq("municipio", listing.municipio)
-            .eq("activo", True)
-            .eq("pending_review", False)
+            .eq("status", "activo")
             .neq("url", listing.url)
             .gte("precio_venta", price_lo)
             .lte("precio_venta", price_hi)
@@ -202,7 +196,7 @@ def find_near_duplicate(listing: "Listing", tolerance: float = 0.10) -> Optional
 
 
 def get_pending_review_listings(limit: int = 100) -> list[dict]:
-    """Devuelve los anuncios marcados como posibles duplicados pendientes de revisión."""
+    """Devuelve anuncios pendientes de revisión, enriquecidos con datos del original."""
     client = get_client()
     if client is None:
         return []
@@ -210,12 +204,28 @@ def get_pending_review_listings(limit: int = 100) -> list[dict]:
         res = (
             client.table("listings")
             .select("*")
-            .eq("pending_review", True)
+            .eq("status", "pendiente_revision")
             .order("primera_deteccion", desc=True)
             .limit(limit)
             .execute()
         )
-        return res.data or []
+        rows = res.data or []
+        for row in rows:
+            original_url = row.get("duplicate_candidate_of")
+            row["original_info"] = None
+            if original_url:
+                try:
+                    orig = (
+                        client.table("listings")
+                        .select("titulo,precio_venta,metros_cuadrados,habitaciones,barrio,municipio,primera_deteccion,url")
+                        .eq("url", original_url)
+                        .limit(1)
+                        .execute()
+                    )
+                    row["original_info"] = orig.data[0] if orig.data else None
+                except Exception:
+                    pass
+        return rows
     except Exception as exc:  # noqa: BLE001
         log.error("db_query_failed", extra={"error": str(exc)})
         return []
@@ -228,9 +238,8 @@ def approve_pending(listing_id: str) -> bool:
         return False
     try:
         client.table("listings").update({
-            "pending_review": False,
+            "status": "activo",
             "duplicate_candidate_of": None,
-            "activo": True,
         }).eq("id", listing_id).execute()
         log.info("listing_approved", extra={"id": listing_id})
         return True
@@ -240,14 +249,14 @@ def approve_pending(listing_id: str) -> bool:
 
 
 def reject_pending(listing_id: str) -> bool:
-    """Rechaza un candidato a duplicado: lo desactiva y quita la marca de revisión."""
+    """Rechaza un candidato a duplicado: lo descarta y registra el motivo."""
     client = get_client()
     if client is None:
         return False
     try:
         client.table("listings").update({
-            "pending_review": False,
-            "activo": False,
+            "status": "descartado",
+            "disabled_reason": "duplicado_antiguo_elegido",
         }).eq("id", listing_id).execute()
         log.info("listing_rejected", extra={"id": listing_id})
         return True
@@ -256,7 +265,46 @@ def reject_pending(listing_id: str) -> bool:
         return False
 
 
-def get_price_drops_last_24h(min_score: int = 60, min_pct: float = 5.0) -> list[dict]:
+def keep_new_listing(listing_id: str) -> bool:
+    """
+    'Dejar el nuevo': activa el candidato nuevo y descarta el original.
+    El nuevo listing apunta al original via duplicate_candidate_of.
+    """
+    client = get_client()
+    if client is None:
+        return False
+    try:
+        res = (
+            client.table("listings")
+            .select("id,duplicate_candidate_of")
+            .eq("id", listing_id)
+            .limit(1)
+            .execute()
+        )
+        if not res.data:
+            log.error("keep_new_not_found", extra={"id": listing_id})
+            return False
+
+        original_url = res.data[0].get("duplicate_candidate_of")
+        if original_url:
+            client.table("listings").update({
+                "status": "descartado",
+                "disabled_reason": "duplicado_nuevo_elegido",
+            }).eq("url", original_url).execute()
+
+        client.table("listings").update({
+            "status": "activo",
+            "duplicate_candidate_of": None,
+        }).eq("id", listing_id).execute()
+
+        log.info("keep_new_listing", extra={"id": listing_id, "original_url": original_url})
+        return True
+    except Exception as exc:  # noqa: BLE001
+        log.error("db_keep_new_failed", extra={"id": listing_id, "error": str(exc)})
+        return False
+
+
+def get_price_drops_last_24h(min_score: int = 60, min_pct: float = 5.0) -> list[dict]:  # noqa: ARG001
     """Lista de anuncios con bajada significativa de precio en las ultimas 24h."""
     client = get_client()
     if client is None:
@@ -287,7 +335,7 @@ def get_high_score_listings(min_score: int = 80, limit: int = 50) -> list[dict]:
             client.table("listings")
             .select("*")
             .gte("score", min_score)
-            .eq("activo", True)
+            .eq("status", "activo")
             .order("score", desc=True)
             .limit(limit)
             .execute()
@@ -303,7 +351,7 @@ def query_listings(filters: dict | None = None, limit: int = 1000) -> list[dict]
     Query generica con filtros opcionales para exportar/dashboards.
 
     Filtros soportados:
-        municipio, barrio, fuente, score_label, activo,
+        municipio, barrio, fuente, score_label, activo (bool, maps to status='activo'),
         precio_min, precio_max, rentabilidad_min, score_min,
         fecha_desde, fecha_hasta
     """
@@ -317,7 +365,8 @@ def query_listings(filters: dict | None = None, limit: int = 1000) -> list[dict]
             if filters.get(key):
                 q = q.eq(key, filters[key])
         if "activo" in filters:
-            q = q.eq("activo", filters["activo"])
+            if filters["activo"]:
+                q = q.eq("status", "activo")
         if filters.get("precio_min") is not None:
             q = q.gte("precio_venta", filters["precio_min"])
         if filters.get("precio_max") is not None:
