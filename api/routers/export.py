@@ -1,27 +1,11 @@
 from __future__ import annotations
 import tempfile
-import traceback
 from pathlib import Path
 from typing import Optional
-from fastapi import APIRouter, Query, HTTPException
+from fastapi import APIRouter, Query
 from fastapi.responses import FileResponse
 
 router = APIRouter(prefix="/api/export", tags=["export"])
-
-
-@router.get("/debug")
-def debug_export():
-    """Diagnóstico: prueba si la exportación funciona sin devolver el archivo."""
-    try:
-        from api.services.export_service import generate_excel
-        import tempfile
-        from pathlib import Path
-        tmp = tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False)
-        tmp.close()
-        generate_excel(Path(tmp.name), filters={})
-        return {"status": "ok", "file": tmp.name}
-    except Exception as exc:
-        return {"status": "error", "error": f"{type(exc).__name__}: {exc}", "trace": traceback.format_exc()}
 
 
 @router.get("/excel")
@@ -32,29 +16,26 @@ def export_excel(
     precio_min: Optional[int] = Query(None),
     precio_max: Optional[int] = Query(None),
 ):
-    try:
-        from api.services.export_service import generate_excel
+    from api.services.export_service import generate_excel
 
-        filters = {}
-        if municipio:
-            filters["municipio"] = municipio
-        if score_min is not None:
-            filters["score_min"] = score_min
-        if score_label:
-            filters["score_label"] = score_label
-        if precio_min is not None:
-            filters["precio_min"] = precio_min
-        if precio_max is not None:
-            filters["precio_max"] = precio_max
+    filters = {}
+    if municipio:
+        filters["municipio"] = municipio
+    if score_min is not None:
+        filters["score_min"] = score_min
+    if score_label:
+        filters["score_label"] = score_label
+    if precio_min is not None:
+        filters["precio_min"] = precio_min
+    if precio_max is not None:
+        filters["precio_max"] = precio_max
 
-        tmp = tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False)
-        tmp.close()
-        generate_excel(Path(tmp.name), filters=filters)
+    tmp = tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False)
+    tmp.close()
+    generate_excel(Path(tmp.name), filters=filters)
 
-        return FileResponse(
-            path=tmp.name,
-            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            filename="oportunidades.xlsx",
-        )
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"{type(exc).__name__}: {exc}\n{traceback.format_exc()}")
+    return FileResponse(
+        path=tmp.name,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        filename="oportunidades.xlsx",
+    )
