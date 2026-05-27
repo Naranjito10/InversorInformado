@@ -70,3 +70,20 @@ def test_get_report_not_found():
         from api.services.reports_service import get_report
         result = get_report("nonexistent-id")
     assert result is None
+
+
+def test_ai_estimate_returns_market_data():
+    mock_response = MagicMock()
+    mock_response.content = [MagicMock(text='{"precio_m2_zona_min": 3200, "precio_m2_zona_medio": 4500, "precio_m2_zona_max": 5800, "alquiler_estimado_mes": 1600, "rentabilidad_bruta": 5.5, "rentabilidad_neta": 3.8, "rentabilidad_bruta_media_zona": 4.2, "rentabilidad_neta_media_zona": 2.9, "demanda_alquiler": "alta", "dias_hasta_alquiler": 10, "alquiler_vs_media_pct": 8, "percentil_precio": 25, "percentil_rentabilidad": 20, "percentil_vecindario": 30, "verdict": "Buena oportunidad."}')]
+
+    mock_anthropic = MagicMock()
+    mock_anthropic.messages.create.return_value = mock_response
+
+    with patch("api.services.reports_service.anthropic.Anthropic", return_value=mock_anthropic):
+        from api.services.reports_service import ai_estimate_market
+        result = ai_estimate_market({
+            "municipio": "Barcelona", "barrio": "Eixample",
+            "precio": 385000, "metros": 93, "habitaciones": 3, "estado": "buen estado"
+        })
+    assert result["precio_m2_zona_medio"] == 4500
+    assert result["demanda_alquiler"] == "alta"

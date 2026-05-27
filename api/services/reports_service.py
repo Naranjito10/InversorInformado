@@ -128,3 +128,52 @@ async def render_report_pdf(report: dict) -> bytes:
         })
         await browser.close()
     return pdf
+
+
+def ai_estimate_market(property_data: dict) -> dict:
+    """Llama a Claude para obtener estimados de datos de mercado de un piso."""
+    import re
+    client = anthropic.Anthropic()
+
+    prompt = f"""Eres un experto en mercado inmobiliario español.
+Dado este piso, proporciona estimaciones del mercado inmobiliario local en formato JSON.
+Datos del piso:
+- Municipio: {property_data.get('municipio', '?')}
+- Barrio: {property_data.get('barrio', '?')}
+- Precio: {property_data.get('precio', '?')} €
+- Metros: {property_data.get('metros', '?')} m²
+- Habitaciones: {property_data.get('habitaciones', '?')}
+- Estado: {property_data.get('estado', '?')}
+
+Devuelve ÚNICAMENTE JSON válido con estos campos (sin markdown, sin explicaciones):
+{{
+  "precio_m2_zona_min": <int €/m²>,
+  "precio_m2_zona_medio": <int €/m²>,
+  "precio_m2_zona_max": <int €/m²>,
+  "alquiler_estimado_mes": <int €/mes para piso similar>,
+  "rentabilidad_bruta": <float %>,
+  "rentabilidad_neta": <float %>,
+  "rentabilidad_bruta_media_zona": <float %>,
+  "rentabilidad_neta_media_zona": <float %>,
+  "demanda_alquiler": <"muy_alta"|"alta"|"media"|"baja">,
+  "dias_hasta_alquiler": <int días>,
+  "alquiler_vs_media_pct": <int % diferencia vs media barrio>,
+  "percentil_precio": <int top X% más barato>,
+  "percentil_rentabilidad": <int top X%>,
+  "percentil_vecindario": <int top X%>,
+  "verdict": <string 2 frases evaluando la oportunidad>
+}}"""
+
+    response = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=1024,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    raw = response.content[0].text.strip()
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        match = re.search(r"\{.*\}", raw, re.DOTALL)
+        if match:
+            return json.loads(match.group())
+        raise ValueError(f"Claude no devolvió JSON válido: {raw[:200]}")
