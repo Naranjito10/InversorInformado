@@ -31,6 +31,16 @@ export default function Filters({ filters, onChange }: Props) {
         />
       </div>
 
+      <div className="flex flex-col gap-1 min-w-[140px]">
+        <label className="text-xs text-gray-500">Barrio</label>
+        <input
+          className="capitalize border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="Eixample..."
+          value={filters.barrio ?? ""}
+          onChange={(e) => set("barrio", e.target.value)}
+        />
+      </div>
+
       <div className="flex flex-col gap-1">
         <label className="text-xs text-gray-500">Portal</label>
         <select

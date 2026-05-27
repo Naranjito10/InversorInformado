@@ -35,6 +35,7 @@ export const logout = (): void => {
 
 export interface ListingFilters {
   municipio?: string;
+  barrio?: string;
   fuente?: string;
   score_label?: string;
   score_min?: number;
