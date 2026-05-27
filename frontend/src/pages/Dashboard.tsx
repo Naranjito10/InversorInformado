@@ -20,8 +20,12 @@ export default function Dashboard() {
     setExporting(true);
     try {
       await exportExcel(filters);
-    } catch {
-      alert("Error al exportar. Inténtalo de nuevo.");
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { status: number; data?: unknown } })?.response?.status
+          ? `Error ${(err as { response: { status: number } }).response.status}: el backend devolvió un error.`
+          : `Error de conexión: no se pudo contactar con el servidor.`;
+      alert(msg);
     } finally {
       setExporting(false);
     }
