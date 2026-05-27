@@ -9,6 +9,21 @@ from fastapi.responses import FileResponse
 router = APIRouter(prefix="/api/export", tags=["export"])
 
 
+@router.get("/debug")
+def debug_export():
+    """Diagnóstico: prueba si la exportación funciona sin devolver el archivo."""
+    try:
+        from api.services.export_service import generate_excel
+        import tempfile
+        from pathlib import Path
+        tmp = tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False)
+        tmp.close()
+        generate_excel(Path(tmp.name), filters={})
+        return {"status": "ok", "file": tmp.name}
+    except Exception as exc:
+        return {"status": "error", "error": f"{type(exc).__name__}: {exc}", "trace": traceback.format_exc()}
+
+
 @router.get("/excel")
 def export_excel(
     municipio: Optional[str] = Query(None),
