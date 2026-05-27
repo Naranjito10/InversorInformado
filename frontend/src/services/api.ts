@@ -235,3 +235,96 @@ export const exportExcel = async (filters: ListingFilters = {}): Promise<void> =
   link.remove();
   window.URL.revokeObjectURL(url);
 };
+
+// ── Reports ──────────────────────────────────────────────────────────────────
+
+export interface ReportCreateIn {
+  type?: string;
+  title: string;
+  property_id?: string | null;
+  data: import("../types").ReportData;
+}
+
+export const fetchReports = async (): Promise<import("../types").Report[]> => {
+  const { data } = await api.get<import("../types").Report[]>("/reports");
+  return data;
+};
+
+export const createReport = async (
+  payload: ReportCreateIn
+): Promise<import("../types").Report> => {
+  const { data } = await api.post<import("../types").Report>("/reports", payload);
+  return data;
+};
+
+export const fetchReport = async (id: string): Promise<import("../types").Report> => {
+  const { data } = await api.get<import("../types").Report>(`/reports/${id}`);
+  return data;
+};
+
+export const getReportHtmlUrl = (id: string): string => `/api/reports/${id}/html`;
+export const getReportPdfUrl = (id: string): string => `/api/reports/${id}/pdf`;
+
+export const fetchReportHtmlBlob = async (id: string): Promise<string> => {
+  const resp = await api.get(`/reports/${id}/html`, { responseType: "blob" });
+  return URL.createObjectURL(resp.data);
+};
+
+export const downloadReportPdf = async (id: string, title: string): Promise<void> => {
+  const resp = await api.get(`/reports/${id}/pdf`, { responseType: "blob" });
+  const url = URL.createObjectURL(resp.data);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${title.toLowerCase().replace(/\s+/g, "-")}.pdf`;
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
+export interface AIEstimateRequest {
+  municipio: string;
+  barrio: string;
+  precio: number;
+  metros: number;
+  habitaciones: number;
+  estado: string;
+}
+
+export const aiEstimateMarket = async (
+  req: AIEstimateRequest
+): Promise<import("../types").ReportMarket> => {
+  const { data } = await api.post<import("../types").ReportMarket>("/reports/ai-estimate", req);
+  return data;
+};
+
+// ── Telegram ─────────────────────────────────────────────────────────────────
+
+export const fetchTelegramLog = async (): Promise<import("../types").TelegramLogEntry[]> => {
+  const { data } = await api.get<import("../types").TelegramLogEntry[]>("/telegram/log");
+  return data;
+};
+
+export const publishReportToTelegram = async (
+  reportId: string
+): Promise<{ status: string; preview: string }> => {
+  const { data } = await api.post(`/telegram/publish-report/${reportId}`);
+  return data;
+};
+
+export const generateWeeklyReport = async (): Promise<{
+  status: string;
+  properties_featured?: number;
+  preview?: string;
+}> => {
+  const { data } = await api.post("/telegram/generate-weekly");
+  return data;
+};
+
+export const publishTelegram = async (req: {
+  type: string;
+  title: string;
+  body: string;
+  zone?: string;
+}): Promise<{ status: string; channel_id: string }> => {
+  const { data } = await api.post("/telegram/publish", req);
+  return data;
+};

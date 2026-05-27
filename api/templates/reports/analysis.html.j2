@@ -1,0 +1,688 @@
+{# Filtro format_price: convierte 385000 → "385.000" — registrado en el entorno Jinja2 #}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+@page {
+  size: A4;
+  margin: 0;
+}
+
+body {
+  font-family: 'DM Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 12px;
+  color: #1a1a1a;
+  background: #f0ede8;
+  width: 210mm;
+  min-height: 297mm;
+}
+
+.page {
+  width: 210mm;
+  min-height: 297mm;
+  background: #f0ede8;
+  padding: 10mm 12mm;
+  page-break-after: always;
+}
+
+.page:last-child {
+  page-break-after: avoid;
+}
+
+/* COVER HEADER */
+.cover {
+  background: #0D1B2A;
+  border-radius: 10px;
+  padding: 22px 24px 18px;
+  margin-bottom: 14px;
+  color: #fff;
+}
+
+.cover-tag {
+  display: inline-block;
+  background: rgba(255,255,255,0.1);
+  border: 0.5px solid rgba(255,255,255,0.2);
+  color: #aac4e0;
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  padding: 3px 9px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.cover-title {
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: 26px;
+  font-weight: 400;
+  line-height: 1.15;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.cover-address {
+  font-size: 11px;
+  color: rgba(255,255,255,0.5);
+  margin-bottom: 16px;
+}
+
+.cover-stats {
+  display: table;
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 1px;
+  background: rgba(255,255,255,0.12);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.cover-stat {
+  display: table-cell;
+  background: rgba(255,255,255,0.06);
+  padding: 10px 12px;
+  width: 33.33%;
+}
+
+.cover-stat-label {
+  font-size: 9px;
+  color: rgba(255,255,255,0.45);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 3px;
+}
+
+.cover-stat-value {
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.cover-stat-sub {
+  font-size: 9px;
+  color: rgba(255,255,255,0.38);
+  margin-top: 2px;
+}
+
+.verdict-bar {
+  background: rgba(255,255,255,0.07);
+  border: 0.5px solid rgba(255,255,255,0.14);
+  border-radius: 7px;
+  padding: 9px 12px;
+  margin-top: 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.verdict-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #4ade80;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.verdict-text {
+  font-size: 10.5px;
+  color: rgba(255,255,255,0.72);
+  line-height: 1.5;
+}
+
+/* SECTIONS */
+.section { margin-bottom: 13px; }
+
+.section-title {
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #888;
+  margin-bottom: 7px;
+  padding-bottom: 4px;
+  border-bottom: 0.5px solid #ddd;
+}
+
+/* GRIDS */
+.grid2 { display: table; width: 100%; border-collapse: separate; border-spacing: 10px; margin: -10px; }
+.grid2-cell { display: table-cell; width: 50%; }
+.grid3 { display: table; width: 100%; border-collapse: separate; border-spacing: 8px; margin: -8px; }
+.grid3-cell { display: table-cell; width: 33.33%; }
+.grid5 { display: table; width: 100%; border-collapse: separate; border-spacing: 7px; margin: -7px; }
+.grid5-cell { display: table-cell; width: 20%; }
+
+/* CARDS */
+.card {
+  background: #fff;
+  border: 0.5px solid #e0ddd8;
+  border-radius: 10px;
+  padding: 11px 13px;
+}
+
+.card-label {
+  font-size: 10px;
+  color: #888;
+  margin-bottom: 5px;
+}
+
+.card-value {
+  font-size: 20px;
+  font-weight: 500;
+  color: #1a1a1a;
+  line-height: 1;
+}
+
+.card-sub {
+  font-size: 10px;
+  color: #888;
+  margin-top: 4px;
+}
+
+/* BADGES */
+.badge {
+  display: inline-block;
+  font-size: 9.5px;
+  font-weight: 500;
+  padding: 2px 7px;
+  border-radius: 4px;
+  margin-top: 5px;
+}
+.badge-up { background: #dcfce7; color: #166534; }
+.badge-down { background: #fee2e2; color: #991b1b; }
+.badge-neutral { background: #fef3c7; color: #92400e; }
+.badge-info { background: #dbeafe; color: #1e40af; }
+
+/* RANK BARS */
+.rank-row {
+  display: table;
+  width: 100%;
+  margin-bottom: 8px;
+}
+.rank-name { display: table-cell; width: 95px; font-size: 11px; font-weight: 500; color: #1a1a1a; vertical-align: middle; }
+.rank-bar-wrap { display: table-cell; vertical-align: middle; padding: 0 8px; }
+.rank-bar-bg { background: #f0ede8; height: 6px; border-radius: 3px; overflow: hidden; }
+.rank-bar-fill { height: 6px; border-radius: 3px; }
+.rank-pct { display: table-cell; width: 38px; font-size: 10px; font-weight: 500; color: #888; text-align: right; vertical-align: middle; }
+
+/* MARKET POSITION BAR */
+.mkt-pos { position: relative; height: 32px; margin: 10px 0 5px; }
+.mkt-track { position: absolute; top: 50%; left: 0; right: 0; height: 4px; background: #e8e5e0; border-radius: 2px; transform: translateY(-50%); }
+.mkt-range { position: absolute; top: 50%; height: 4px; background: #bfdbfe; transform: translateY(-50%); border-radius: 2px; }
+.mkt-avg-line { position: absolute; top: 50%; width: 2px; height: 16px; background: #3b82f6; transform: translate(-50%, -50%); border-radius: 1px; }
+.mkt-dot { position: absolute; top: 50%; width: 14px; height: 14px; border-radius: 50%; background: #0D1B2A; border: 2px solid #fff; box-shadow: 0 0 0 1.5px #0D1B2A; transform: translate(-50%, -50%); }
+.mkt-labels { display: flex; justify-content: space-between; font-size: 9px; color: #999; }
+
+/* DEMAND METER */
+.demand-meter { height: 8px; border-radius: 4px; background: #e8e5e0; margin: 7px 0 4px; overflow: hidden; }
+.demand-fill { height: 100%; border-radius: 4px; }
+
+/* RISK TABLE */
+.risk-table { width: 100%; border-collapse: collapse; }
+.risk-table td { padding: 6px 0; font-size: 10.5px; vertical-align: middle; border-bottom: 0.5px solid #eee; }
+.risk-table tr:last-child td { border-bottom: none; }
+.risk-badge { padding: 2px 7px; border-radius: 4px; font-size: 9.5px; font-weight: 500; white-space: nowrap; }
+.risk-ok { background: #dcfce7; color: #166534; }
+.risk-warn { background: #fef3c7; color: #92400e; }
+.risk-alert { background: #fee2e2; color: #991b1b; }
+
+/* AMENITY GRID */
+.amenity-grid { display: table; width: 100%; border-collapse: separate; border-spacing: 7px; margin: -7px; }
+.amenity-cell { display: table-cell; width: 12.5%; }
+.amenity-item {
+  background: #f7f4f0;
+  border-radius: 8px;
+  padding: 8px 5px;
+  text-align: center;
+}
+.amenity-label { font-size: 9px; color: #888; }
+.amenity-score { font-size: 11px; font-weight: 600; margin-top: 3px; }
+
+/* SCORE RINGS (using table-based circles) */
+.score-wrap { text-align: center; padding: 8px 0; }
+.score-circle {
+  width: 68px; height: 68px; border-radius: 50%;
+  display: inline-block; line-height: 68px;
+  font-size: 19px; font-weight: 600;
+  margin-bottom: 5px;
+  border: 6px solid transparent;
+}
+.score-label { font-size: 10px; color: #888; }
+.score-grade { font-size: 14px; font-weight: 700; }
+
+/* INFO BOX */
+.info-box {
+  background: #f7f4f0;
+  border-radius: 8px;
+  padding: 8px 11px;
+  font-size: 10px;
+  color: #666;
+  margin-top: 9px;
+  line-height: 1.5;
+}
+
+/* FOOTER */
+.footer-note {
+  font-size: 9px;
+  color: #aaa;
+  border-top: 0.5px solid #ddd;
+  padding-top: 9px;
+  margin-top: 12px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.section-inner-card {
+  background: #fff;
+  border: 0.5px solid #e0ddd8;
+  border-radius: 10px;
+  padding: 11px 13px;
+}
+
+.alert-box {
+  background: #fffbeb;
+  border-left: 3px solid #f59e0b;
+  border-radius: 0 6px 6px 0;
+  padding: 8px 11px;
+  font-size: 10px;
+  color: #78350f;
+  margin-top: 9px;
+  line-height: 1.5;
+}
+
+.page-label {
+  font-size: 9px;
+  color: #bbb;
+  text-align: right;
+  margin-bottom: 8px;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+}
+</style>
+</head>
+<body>
+
+<!-- PAGE 1 -->
+<div class="page">
+  <div class="page-label">INFORME DE INVERSIÓN · PÁGINA 1 DE 2</div>
+
+  <!-- COVER HEADER -->
+  <div class="cover">
+    <div class="cover-tag">{{ report_tag }}</div>
+    <div class="cover-title">{{ report_title | safe }}</div>
+    <div class="cover-address">{{ p.direccion }} &nbsp;·&nbsp; {{ p.municipio }}, {{ p.barrio }}</div>
+
+    <table class="cover-stats">
+      <tr>
+        <td class="cover-stat">
+          <div class="cover-stat-label">Precio anunciado</div>
+          <div class="cover-stat-value">{{ p.precio | format_price }} €</div>
+          <div class="cover-stat-sub">{{ p.metros }} m² · {{ p.habitaciones }} hab. · {{ p.banos }} baño(s)</div>
+        </td>
+        <td class="cover-stat">
+          <div class="cover-stat-label">Precio / m²</div>
+          <div class="cover-stat-value">{{ m.precio_m2_piso | format_price }} €</div>
+          <div class="cover-stat-sub">Media zona: {{ m.precio_m2_zona_medio | format_price }} €/m²</div>
+        </td>
+        <td class="cover-stat">
+          <div class="cover-stat-label">Rentabilidad bruta</div>
+          <div class="cover-stat-value">{{ m.rentabilidad_bruta }}%</div>
+          <div class="cover-stat-sub">Media zona: {{ m.rentabilidad_bruta_media_zona }}%</div>
+        </td>
+      </tr>
+    </table>
+
+    <div class="verdict-bar">
+      <div class="verdict-dot"></div>
+      <div class="verdict-text"><strong style="color:#fff">Valoración general:</strong> {{ data.verdict | safe }}</div>
+    </div>
+  </div>
+
+  <!-- MARKET POSITION -->
+  <div class="section">
+    <div class="section-title">Posición en el mercado de compra</div>
+    <table class="grid2">
+      <tr>
+        <td class="grid2-cell">
+          <div class="card">
+            <div class="card-label">Precio por m² vs. mercado</div>
+            <div class="mkt-pos">
+              <div class="mkt-track"></div>
+              <div class="mkt-range" style="left:22%; right:15%;"></div>
+              <div class="mkt-avg-line" style="left:62%;"></div>
+              <div class="mkt-dot" style="left:{{ m.pos_pct_precio_m2 }}%;"></div>
+            </div>
+            <div class="mkt-labels">
+              <span>Mín. {{ m.precio_m2_zona_min | format_price }} €</span><span style="color:#3b82f6">Media {{ m.precio_m2_zona_medio | format_price }} €</span><span>Máx. {{ m.precio_m2_zona_max | format_price }} €</span>
+            </div>
+            <div style="margin-top:8px"><span class="badge badge-up">Este piso: {{ m.precio_m2_piso | format_price }} €/m² · Top {{ m.percentil_precio }}% más barato</span></div>
+            <div class="card-sub" style="margin-top:5px">Un precio {{ m.descuento_vs_media }}% inferior a la media del {{ p.barrio }}</div>
+          </div>
+        </td>
+        <td class="grid2-cell">
+          <div class="card">
+            <div class="card-label">Ranking frente a pisos similares en la zona</div>
+            <div class="rank-row">
+  <div class="rank-label">Precio/m²</div>
+  <div class="rank-bar"><div class="rank-bar-fill" style="width:{{ s.percentil_precio }}%; background:#0D1B2A;"></div></div>
+  <div class="rank-pct" style="color:#1a1a1a; font-weight:600">Top {{ s.percentil_precio }}%</div>
+</div>
+<div class="rank-row">
+  <div class="rank-label">Rentabilidad</div>
+  <div class="rank-bar"><div class="rank-bar-fill" style="width:{{ s.percentil_rentabilidad }}%;"></div></div>
+  <div class="rank-pct">Top {{ s.percentil_rentabilidad }}%</div>
+</div>
+<div class="rank-row">
+  <div class="rank-label">Vecindario</div>
+  <div class="rank-bar"><div class="rank-bar-fill" style="width:{{ s.percentil_vecindario }}%; background:#166534;"></div></div>
+  <div class="rank-pct" style="color:#166534">Top {{ s.percentil_vecindario }}%</div>
+</div>
+<div class="card-sub" style="margin-top:4px">Percentil {{ s.percentil_precio }} de relación calidad-precio del mercado</div>
+          </div>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- RENTAL ANALYSIS -->
+  <div class="section">
+    <div class="section-title">Análisis de rentabilidad por alquiler</div>
+    <table class="grid3">
+      <tr>
+        <td class="grid3-cell">
+          <div class="card">
+            <div class="card-label">Alquiler estimado de mercado</div>
+            <div class="card-value">{{ m.alquiler_estimado_mes | format_price }} €</div>
+            <div class="card-sub">/ mes · piso similar en zona</div>
+            <span class="badge badge-up">{{ m.alquiler_vs_media_pct }}% vs. media barrio</span>
+          </div>
+        </td>
+        <td class="grid3-cell">
+          <div class="card">
+            <div class="card-label">Rentabilidad bruta anual</div>
+            <div class="card-value">{{ m.rentabilidad_bruta }}%</div>
+            <div class="card-sub">{{ (m.alquiler_estimado_mes * 12) | format_price }} € / año estimados</div>
+            <span class="badge badge-info">Media zona: {{ m.rentabilidad_bruta_media_zona }}%</span>
+          </div>
+        </td>
+        <td class="grid3-cell">
+          <div class="card">
+            <div class="card-label">Rentabilidad neta estimada</div>
+            <div class="card-value">{{ m.rentabilidad_neta }}%</div>
+            <div class="card-sub">Tras IBI, comunidad y seguros</div>
+            <span class="badge badge-info">Media zona: {{ m.rentabilidad_neta_media_zona }}%</span>
+          </div>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- RENTAL DEMAND -->
+  <div class="section">
+    <div class="section-title">Demanda de alquiler en la zona</div>
+    <table class="grid2">
+      <tr>
+        <td class="grid2-cell">
+          <div class="card">
+            <div class="card-label">Nivel de demanda del vecindario</div>
+            <div style="font-size:18px; font-weight:600; margin:5px 0 2px;">{{ m.demanda_label }} &nbsp;<span style="font-size:12px; color:#888; font-weight:400">· {{ p.barrio }}</span></div>
+            <div class="demand-meter">
+              <div class="demand-fill" style="width:{{ m.demanda_pct }}%; background:#0D1B2A;"></div>
+            </div>
+            <div class="mkt-labels" style="font-size:9px">
+              <span>Baja</span><span>Media</span><span style="color:#1a1a1a; font-weight:500">Muy alta ▲</span>
+            </div>
+            <div class="card-sub" style="margin-top:7px">Tiempo medio hasta arrendamiento: <strong>{{ m.dias_hasta_alquiler }} días</strong>. Una de las zonas más demandadas de {{ p.municipio }}.</div>
+          </div>
+        </td>
+        <td class="grid2-cell">
+          <div class="card">
+            <div class="card-label">Velocidad de alquiler comparada</div>
+            <div style="margin-top:8px">
+              <div class="rank-row">
+                <div class="rank-name">Esta zona</div>
+                <div class="rank-bar-wrap"><div class="rank-bar-bg"><div class="rank-bar-fill" style="width:88%; background:#0D1B2A;"></div></div></div>
+                <div class="rank-pct" style="color:#1a1a1a;">{{ m.dias_hasta_alquiler }} días</div>
+              </div>
+              <div class="rank-row">
+                <div class="rank-name">Media {{ p.municipio }}</div>
+                <div class="rank-bar-wrap"><div class="rank-bar-bg"><div class="rank-bar-fill" style="width:55%; background:#94a3b8;"></div></div></div>
+                <div class="rank-pct">{{ m.media_dias_mercado | default(19) }} días</div>
+              </div>
+              <div class="rank-row">
+                <div class="rank-name">Zonas con baja demanda</div>
+                <div class="rank-bar-wrap"><div class="rank-bar-bg"><div class="rank-bar-fill" style="width:25%; background:#fca5a5;"></div></div></div>
+                <div class="rank-pct" style="color:#991b1b">45+ días</div>
+              </div>
+            </div>
+            <div class="card-sub" style="margin-top:3px">Los pisos aquí se alquilan <strong>{{ m.velocidad_vs_media_pct }}% más rápido</strong> que la media de {{ p.municipio }}</div>
+          </div>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="footer-note">
+    <span>Datos estimados a partir de fuentes de mercado · {{ fecha_generacion }} · Uso informativo</span>
+    <span style="color:#666; font-weight:500">Informe confidencial · Solo para el destinatario</span>
+  </div>
+</div>
+
+<!-- PAGE 2 -->
+<div class="page">
+  <div class="page-label">INFORME DE INVERSIÓN · PÁGINA 2 DE 2</div>
+
+  <!-- BUILDING RISKS -->
+  <div class="section">
+    <div class="section-title">Estado del edificio y riesgos estructurales</div>
+    <div class="section-inner-card">
+      <table class="risk-table">
+        <tr>
+          <td style="width:28px; color:#888; font-size:13px;">🏢</td>
+          <td style="color:#1a1a1a; font-weight:500;">Año de construcción</td>
+          <td style="color:#888; font-size:10px; text-align:right; padding-right:12px;">{{ b.anyo_construccion }} ({{ current_year - b.anyo_construccion }} años)</td>
+          <td style="width:130px; text-align:right;"><span class="risk-badge risk-warn">Requiere atención</span></td>
+        </tr>
+        <tr>
+          <td style="color:#888; font-size:13px;">📋</td>
+          <td style="color:#1a1a1a; font-weight:500;">ITE (Inspección Técnica Edificio)</td>
+          <td style="color:#888; font-size:10px; text-align:right; padding-right:12px;">{{ b.ite_resultado | title }} · {{ b.ite_fecha }}</td>
+          <td style="text-align:right;"><span class="risk-badge {{ 'risk-ok' if b.ite_resultado == 'favorable' else 'risk-warn' }}">{{ 'Sin deficiencias' if b.ite_resultado == 'favorable' else 'Revisar ITE' }}</span></td>
+        </tr>
+        <tr>
+          <td style="color:#888; font-size:13px;">💧</td>
+          <td style="color:#1a1a1a; font-weight:500;">Humedades o filtraciones</td>
+          <td style="color:#888; font-size:10px; text-align:right; padding-right:12px;">{{ "No detectadas" if not b.humedades else "Detectadas" }}</td>
+          <td style="text-align:right;"><span class="risk-badge {{ 'risk-alert' if b.humedades else 'risk-ok' }}">{{ 'Detectadas' if b.humedades else 'Sin riesgo' }}</span></td>
+        </tr>
+        <tr>
+          <td style="color:#888; font-size:13px;">🛗</td>
+          <td style="color:#1a1a1a; font-weight:500;">Ascensor</td>
+          <td style="color:#888; font-size:10px; text-align:right; padding-right:12px;">{{ "Sí" if b.ascensor else "No" }}</td>
+          <td style="text-align:right;"><span class="risk-badge {{ 'risk-ok' if b.ascensor else 'risk-warn' }}">{{ 'Correcto' if b.ascensor else 'Sin ascensor' }}</span></td>
+        </tr>
+        <tr>
+          <td style="color:#888; font-size:13px;">⚡</td>
+          <td style="color:#1a1a1a; font-weight:500;">Instalación eléctrica</td>
+          <td style="color:#888; font-size:10px; text-align:right; padding-right:12px;">{{ b.electrica }}</td>
+          <td style="text-align:right;"><span class="risk-badge {{ 'risk-ok' if b.electrica and 'renov' in b.electrica|lower else 'risk-warn' }}">{{ 'Actualizada' if b.electrica and 'renov' in b.electrica|lower else 'Actualizar recomendado' }}</span></td>
+        </tr>
+        <tr>
+          <td style="color:#888; font-size:13px;">🌡️</td>
+          <td style="color:#1a1a1a; font-weight:500;">Eficiencia energética</td>
+          <td style="color:#888; font-size:10px; text-align:right; padding-right:12px;">Calificación {{ p.cee if p.cee else "—" }}</td>
+          <td style="text-align:right;"><span class="risk-badge {{ 'risk-ok' if p.cee in ['A', 'B', 'C'] else 'risk-warn' if p.cee in ['D', 'E'] else 'risk-alert' }}">{{ 'Eficiente' if p.cee in ['A', 'B', 'C'] else 'Mejorable' if p.cee in ['D', 'E'] else 'Revisar' }}</span></td>
+        </tr>
+        <tr>
+          <td style="color:#888; font-size:13px;">🔧</td>
+          <td style="color:#1a1a1a; font-weight:500;">Fondo de reserva comunidad</td>
+          <td style="color:#888; font-size:10px; text-align:right; padding-right:12px;">{{ b.fondo_reserva | format_price }} € · {{ b.fondo_reserva_estado }}</td>
+          <td style="text-align:right;"><span class="risk-badge {{ 'risk-ok' if b.fondo_reserva_estado and 'adecuado' in b.fondo_reserva_estado|lower else 'risk-warn' }}">{{ b.fondo_reserva_estado if b.fondo_reserva_estado else 'No informado' }}</span></td>
+        </tr>
+      </table>
+      <div class="alert-box">
+        {{ b.alerta_reformas | safe }}
+      </div>
+    </div>
+  </div>
+
+  <!-- AMENITIES -->
+  <div class="section">
+    <div class="section-title">Servicios del vecindario</div>
+    <table class="amenity-grid">
+      <tr>
+        <td class="amenity-cell">
+          <div class="amenity-item">
+            <div style="font-size:16px;">🚌</div>
+            <div class="amenity-label">Transporte</div>
+            <div class="amenity-score" style="color:#166534;">{{ a.transporte }}</div>
+          </div>
+        </td>
+        <td class="amenity-cell">
+          <div class="amenity-item">
+            <div style="font-size:16px;">🏫</div>
+            <div class="amenity-label">Colegios</div>
+            <div class="amenity-score" style="color:#166534;">{{ a.colegios }}</div>
+          </div>
+        </td>
+        <td class="amenity-cell">
+          <div class="amenity-item">
+            <div style="font-size:16px;">🏥</div>
+            <div class="amenity-label">Salud</div>
+            <div class="amenity-score" style="color:#166534;">{{ a.salud }}</div>
+          </div>
+        </td>
+        <td class="amenity-cell">
+          <div class="amenity-item">
+            <div style="font-size:16px;">🛒</div>
+            <div class="amenity-label">Comercios</div>
+            <div class="amenity-score" style="color:#166534;">{{ a.comercios }}</div>
+          </div>
+        </td>
+        <td class="amenity-cell">
+          <div class="amenity-item">
+            <div style="font-size:16px;">🌳</div>
+            <div class="amenity-label">Zonas verdes</div>
+            <div class="amenity-score" style="color:#92400e;">{{ a.zonas_verdes }}</div>
+          </div>
+        </td>
+        <td class="amenity-cell">
+          <div class="amenity-item">
+            <div style="font-size:16px;">🛡️</div>
+            <div class="amenity-label">Seguridad</div>
+            <div class="amenity-score" style="color:#166534;">{{ a.seguridad }}</div>
+          </div>
+        </td>
+        <td class="amenity-cell">
+          <div class="amenity-item">
+            <div style="font-size:16px;">👥</div>
+            <div class="amenity-label">Ambiente</div>
+            <div class="amenity-score" style="color:#166534;">{{ a.ambiente }}</div>
+          </div>
+        </td>
+        <td class="amenity-cell">
+          <div class="amenity-item">
+            <div style="font-size:16px;">🅿️</div>
+            <div class="amenity-label">Aparcamiento</div>
+            <div class="amenity-score" style="color:#92400e;">{{ a.aparcamiento }}</div>
+          </div>
+        </td>
+      </tr>
+    </table>
+    <div class="info-box">
+      {{ a.descripcion_cercano | safe }}
+    </div>
+  </div>
+
+  <!-- SCORE RINGS -->
+  <div class="section">
+    <div class="section-title">Puntuación global del piso</div>
+    <div style="background:#fff; border:0.5px solid #e0ddd8; border-radius:10px; padding:14px 10px;">
+      <table class="grid5">
+        <tr>
+          <td class="grid5-cell">
+            <div class="score-wrap">
+              <div style="width:72px; height:72px; border-radius:50%; border:5px solid #0D1B2A; display:inline-flex; align-items:center; justify-content:center; margin-bottom:6px;">
+                <span style="font-size:18px; font-weight:600; color:#0D1B2A;">{{ s.global }}</span>
+              </div>
+              <div class="score-label">Global<br><span class="score-grade" style="color:#0D1B2A;">{{ s.global_grade }}</span></div>
+            </div>
+          </td>
+          <td class="grid5-cell">
+            <div class="score-wrap">
+              <div style="width:72px; height:72px; border-radius:50%; border:5px solid #16a34a; display:inline-flex; align-items:center; justify-content:center; margin-bottom:6px;">
+                <span style="font-size:18px; font-weight:600; color:#16a34a;">{{ s.precio }}</span>
+              </div>
+              <div class="score-label">Precio<br><span class="score-grade" style="color:#16a34a;">{{ s.precio_grade }}</span></div>
+            </div>
+          </td>
+          <td class="grid5-cell">
+            <div class="score-wrap">
+              <div style="width:72px; height:72px; border-radius:50%; border:5px solid #15803d; display:inline-flex; align-items:center; justify-content:center; margin-bottom:6px;">
+                <span style="font-size:18px; font-weight:600; color:#15803d;">{{ s.rentabilidad }}</span>
+              </div>
+              <div class="score-label">Rentabilidad<br><span class="score-grade" style="color:#15803d;">{{ s.rentabilidad_grade }}</span></div>
+            </div>
+          </td>
+          <td class="grid5-cell">
+            <div class="score-wrap">
+              <div style="width:72px; height:72px; border-radius:50%; border:5px solid #d97706; display:inline-flex; align-items:center; justify-content:center; margin-bottom:6px;">
+                <span style="font-size:18px; font-weight:600; color:#d97706;">{{ s.edificio }}</span>
+              </div>
+              <div class="score-label">Edificio<br><span class="score-grade" style="color:#d97706;">{{ s.edificio_grade }}</span></div>
+            </div>
+          </td>
+          <td class="grid5-cell">
+            <div class="score-wrap">
+              <div style="width:72px; height:72px; border-radius:50%; border:5px solid #16a34a; display:inline-flex; align-items:center; justify-content:center; margin-bottom:6px;">
+                <span style="font-size:18px; font-weight:600; color:#16a34a;">{{ s.vecindario }}</span>
+              </div>
+              <div class="score-label">Vecindario<br><span class="score-grade" style="color:#16a34a;">{{ s.vecindario_grade }}</span></div>
+            </div>
+          </td>
+        </tr>
+      </table>
+
+      <!-- Summary row -->
+      <div style="background:#f7f4f0; border-radius:8px; padding:10px 13px; margin-top:12px; display:table; width:100%; border-collapse:separate; border-spacing:0;">
+        <div style="display:table-cell; width:50%; vertical-align:middle; padding-right:16px;">
+          <div style="font-size:10px; color:#888; margin-bottom:4px;">Resumen de inversión</div>
+          <div style="font-size:11px; color:#1a1a1a; line-height:1.6;">
+            {{ s.resumen | safe }}
+          </div>
+        </div>
+        <div style="display:table-cell; width:50%; vertical-align:middle; border-left:0.5px solid #e0ddd8; padding-left:16px;">
+          <div style="font-size:10px; color:#888; margin-bottom:8px;">Percentil en el mercado</div>
+          <div class="rank-row" style="margin-bottom:6px;">
+            <div class="rank-name" style="font-size:10px; width:80px;">Precio</div>
+            <div class="rank-bar-wrap"><div class="rank-bar-bg"><div class="rank-bar-fill" style="width:85%; background:#0D1B2A;"></div></div></div>
+            <div class="rank-pct" style="color:#166534; font-weight:600;">Top {{ s.percentil_precio }}%</div>
+          </div>
+          <div class="rank-row" style="margin-bottom:6px;">
+            <div class="rank-name" style="font-size:10px; width:80px;">Rentabilidad</div>
+            <div class="rank-bar-wrap"><div class="rank-bar-bg"><div class="rank-bar-fill" style="width:78%; background:#0D1B2A;"></div></div></div>
+            <div class="rank-pct" style="color:#166534; font-weight:600;">Top {{ s.percentil_rentabilidad }}%</div>
+          </div>
+          <div class="rank-row">
+            <div class="rank-name" style="font-size:10px; width:80px;">Vecindario</div>
+            <div class="rank-bar-wrap"><div class="rank-bar-bg"><div class="rank-bar-fill" style="width:88%; background:#0D1B2A;"></div></div></div>
+            <div class="rank-pct" style="color:#166534; font-weight:600;">Top {{ s.percentil_vecindario }}%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-note">
+    <span>Datos estimados a partir de fuentes de mercado · {{ fecha_generacion }} · Uso informativo exclusivamente</span>
+    <span style="color:#555; font-weight:500;">Informe confidencial · Solo para el destinatario</span>
+  </div>
+</div>
+
+</body>
+</html>

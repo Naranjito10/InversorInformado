@@ -40,5 +40,9 @@ python-multipart>=0.0.9
 python-jose[cryptography]>=3.3.0
 bcrypt>=4.0.0
 
+# Reports
+anthropic>=0.28.0
+jinja2>=3.1.4
+
 # Testing
 pytest>=8.0.0
