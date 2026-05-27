@@ -23,8 +23,8 @@ def _format_price(value):
     """Convierte 385000 → '385.000'"""
     try:
         return f"{int(value):,}".replace(",", ".")
-    except (TypeError, ValueError):
-        return str(value)
+    except Exception:
+        return "—"
 
 _jinja_env.filters["format_price"] = _format_price
 
