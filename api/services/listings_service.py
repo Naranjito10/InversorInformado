@@ -1,7 +1,8 @@
 from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from scraper.infrastructure.db import (
-    approve_pending, get_pending_review_listings, query_listings, reject_pending,
+    approve_pending, get_pending_review_listings, query_listings,
+    reject_pending, keep_new_listing as db_keep_new,
 )
 from api.schemas import StatsOut
 
@@ -76,6 +77,10 @@ def approve_listing(listing_id: str) -> bool:
 
 def reject_listing(listing_id: str) -> bool:
     return reject_pending(listing_id)
+
+
+def keep_new_listing(listing_id: str) -> bool:
+    return db_keep_new(listing_id)
 
 
 def get_stats() -> StatsOut:

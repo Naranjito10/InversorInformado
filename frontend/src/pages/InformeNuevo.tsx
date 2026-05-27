@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { fetchListings, createReport, aiEstimateMarket } from "../services/api";
 import type { Listing } from "../types";
 import type { ReportData, ReportMarket, ReportBuilding, ReportAmenities, ReportScores } from "../types";
@@ -20,7 +20,9 @@ const EMPTY_SCORES: ReportScores = {
 
 export default function InformeNuevo() {
   const navigate = useNavigate();
-  const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
+  const location = useLocation();
+  const preselected = (location.state as { listing?: Listing } | null)?.listing ?? null;
+  const [selectedListing, setSelectedListing] = useState<Listing | null>(preselected);
   const [search, setSearch] = useState("");
   const [market, setMarket] = useState<ReportMarket>(EMPTY_MARKET);
   const [building, _setBuilding] = useState<ReportBuilding>({});
@@ -93,6 +95,12 @@ export default function InformeNuevo() {
 
   return (
     <div className="flex flex-col gap-6 max-w-3xl">
+      <button
+        onClick={() => navigate("/informes")}
+        className="self-start flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors"
+      >
+        ← Volver a Informes
+      </button>
       <div>
         <h1 className="text-xl font-bold text-gray-900">Nuevo análisis</h1>
         <p className="text-sm text-gray-500 mt-0.5">
@@ -128,17 +136,71 @@ export default function InformeNuevo() {
           </div>
         )}
         {selectedListing && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 text-sm flex justify-between items-center">
-            <span className="font-medium text-blue-900">
-              {selectedListing.titulo ?? selectedListing.url} —{" "}
-              {selectedListing.precio_venta?.toLocaleString("es-ES")} €
-            </span>
-            <button
-              onClick={() => setSelectedListing(null)}
-              className="text-blue-400 hover:text-blue-700 ml-4"
-            >
-              ✕
-            </button>
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm flex flex-col gap-3">
+            <div className="flex justify-between items-start">
+              <div className="flex flex-col gap-1">
+                <a
+                  href={selectedListing.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-700 font-medium hover:underline break-all"
+                >
+                  {selectedListing.titulo ?? selectedListing.url}
+                </a>
+                <span className="text-gray-500 text-xs">{selectedListing.url}</span>
+              </div>
+              <button
+                onClick={() => setSelectedListing(null)}
+                className="text-blue-400 hover:text-blue-700 ml-4 flex-shrink-0"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+              <div className="bg-white rounded-lg px-3 py-2 border border-blue-100">
+                <p className="text-gray-400 uppercase tracking-wide mb-0.5">Precio</p>
+                <p className="font-bold text-gray-900">{selectedListing.precio_venta?.toLocaleString("es-ES")} €</p>
+              </div>
+              <div className="bg-white rounded-lg px-3 py-2 border border-blue-100">
+                <p className="text-gray-400 uppercase tracking-wide mb-0.5">Superficie</p>
+                <p className="font-bold text-gray-900">{selectedListing.metros_cuadrados ?? "—"} m²</p>
+              </div>
+              <div className="bg-white rounded-lg px-3 py-2 border border-blue-100">
+                <p className="text-gray-400 uppercase tracking-wide mb-0.5">Habitaciones</p>
+                <p className="font-bold text-gray-900">{selectedListing.habitaciones ?? "—"} hab · {selectedListing.banos ?? "—"} baños</p>
+              </div>
+              <div className="bg-white rounded-lg px-3 py-2 border border-blue-100">
+                <p className="text-gray-400 uppercase tracking-wide mb-0.5">€/m²</p>
+                <p className="font-bold text-gray-900">
+                  {selectedListing.precio_venta && selectedListing.metros_cuadrados
+                    ? Math.round(selectedListing.precio_venta / selectedListing.metros_cuadrados).toLocaleString("es-ES")
+                    : "—"} €
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2 text-xs">
+              {selectedListing.barrio && (
+                <span className="bg-white border border-blue-100 text-gray-600 px-2 py-1 rounded-full">📍 {selectedListing.barrio}, {selectedListing.municipio}</span>
+              )}
+              {selectedListing.estado && (
+                <span className="bg-white border border-blue-100 text-gray-600 px-2 py-1 rounded-full">🏠 {selectedListing.estado}</span>
+              )}
+              {selectedListing.planta && (
+                <span className="bg-white border border-blue-100 text-gray-600 px-2 py-1 rounded-full">🔢 Planta {selectedListing.planta}</span>
+              )}
+              {selectedListing.ascensor && (
+                <span className="bg-white border border-blue-100 text-gray-600 px-2 py-1 rounded-full">🛗 Ascensor</span>
+              )}
+              {selectedListing.terraza && (
+                <span className="bg-white border border-blue-100 text-gray-600 px-2 py-1 rounded-full">🌿 Terraza</span>
+              )}
+              {selectedListing.garaje && (
+                <span className="bg-white border border-blue-100 text-gray-600 px-2 py-1 rounded-full">🚗 Garaje</span>
+              )}
+              {selectedListing.cee && (
+                <span className="bg-white border border-blue-100 text-gray-600 px-2 py-1 rounded-full">⚡ CEE {selectedListing.cee}</span>
+              )}
+            </div>
           </div>
         )}
       </div>

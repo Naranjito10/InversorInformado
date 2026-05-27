@@ -11,6 +11,7 @@ export interface Listing {
   tipo_propiedad?: string;
   barrio?: string;
   municipio?: string;
+  provincia?: string;
   estado?: string;
   ascensor?: boolean;
   terraza?: boolean;
@@ -23,6 +24,8 @@ export interface Listing {
   dias_en_mercado?: number;
   activo?: boolean;
   cee?: string;
+  alquiler_estimado?: number;
+  precio_zona_m2?: number;
   primera_deteccion?: string;
   ultima_actualizacion?: string;
 }

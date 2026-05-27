@@ -35,6 +35,7 @@ export const logout = (): void => {
 
 export interface ListingFilters {
   municipio?: string;
+  barrio?: string;
   fuente?: string;
   score_label?: string;
   score_min?: number;
@@ -102,6 +103,17 @@ export const fetchLogs = async (lines = 50): Promise<LogsResponse> => {
   return data;
 };
 
+export interface OriginalListingInfo {
+  titulo?: string;
+  precio_venta?: number;
+  metros_cuadrados?: number;
+  habitaciones?: number;
+  barrio?: string;
+  municipio?: string;
+  primera_deteccion?: string;
+  url: string;
+}
+
 export interface PendingListing {
   id: string;
   url: string;
@@ -112,9 +124,10 @@ export interface PendingListing {
   habitaciones?: number;
   barrio?: string;
   municipio?: string;
-  pending_review: boolean;
+  status: string;
   duplicate_candidate_of?: string;
   primera_deteccion?: string;
+  original_info?: OriginalListingInfo;
 }
 
 export const fetchPendingReview = async (): Promise<PendingListing[]> => {
@@ -128,6 +141,10 @@ export const approveListing = async (id: string): Promise<void> => {
 
 export const rejectListing = async (id: string): Promise<void> => {
   await api.post(`/listings/${id}/reject`);
+};
+
+export const keepNewListing = async (id: string): Promise<void> => {
+  await api.post(`/listings/${id}/keep-new`);
 };
 
 export interface ManualListingIn {

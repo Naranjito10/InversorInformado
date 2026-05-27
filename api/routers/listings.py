@@ -75,6 +75,12 @@ def reject_listing(listing_id: str):
     return {"ok": ok}
 
 
+@router.post("/{listing_id}/keep-new")
+def keep_new_listing(listing_id: str):
+    ok = listings_service.keep_new_listing(listing_id)
+    return {"ok": ok}
+
+
 @router.get("/stats", response_model=StatsOut)
 def get_stats():
     return listings_service.get_stats()
