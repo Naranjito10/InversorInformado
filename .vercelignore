@@ -1,0 +1,10 @@
+api/
+scraper/
+config/
+tests/
+supabase/
+webhook/
+requirements.txt
+Procfile
+.env.example
+README.md
