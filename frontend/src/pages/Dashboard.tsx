@@ -20,8 +20,25 @@ export default function Dashboard() {
     setExporting(true);
     try {
       await exportExcel(filters);
-    } catch {
-      alert("Error al exportar. Inténtalo de nuevo.");
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { status: number; data?: unknown } };
+      const status = axiosErr?.response?.status;
+      let detail = "";
+      const data = axiosErr?.response?.data;
+      if (data instanceof Blob) {
+        try {
+          const text = await data.text();
+          detail = JSON.parse(text)?.detail ?? text;
+        } catch {
+          detail = "";
+        }
+      }
+      const msg = detail
+        ? `Error ${status}:\n${detail}`
+        : status
+        ? `Error ${status}: fallo interno del backend.`
+        : `Error de conexión: no se pudo contactar con el servidor.`;
+      alert(msg);
     } finally {
       setExporting(false);
     }

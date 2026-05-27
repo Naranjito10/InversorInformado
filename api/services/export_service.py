@@ -93,7 +93,7 @@ def generate_excel(out_path: Path, filters: Optional[dict] = None) -> str:
             # Formateo de fechas
             if isinstance(value, str) and key in {"primera_deteccion", "ultima_actualizacion"}:
                 try:
-                    value = datetime.fromisoformat(value.replace("Z", "+00:00"))
+                    value = datetime.fromisoformat(value.replace("Z", "+00:00")).replace(tzinfo=None)
                 except Exception:
                     pass
             cell = ws.cell(row=r_idx, column=c_idx, value=value)
