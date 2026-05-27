@@ -81,6 +81,16 @@ class FotocasaScraper(BaseScraper):
         item["habitaciones"] = feats.get("rooms")
         item["banos"] = feats.get("bathrooms")
         item["planta"] = feats.get("floor")
+        item["ascensor"] = feats.get("elevator")
+        item["terraza"] = feats.get("terrace") or feats.get("balcony")
+        item["garaje"] = feats.get("parking") or feats.get("garage")
+        item["estado"] = feats.get("conservationState") or feats.get("state")
+        item["certificado_energetico"] = (
+            (feats.get("energyCertificate") or {}).get("rating")
+            if isinstance(feats.get("energyCertificate"), dict)
+            else feats.get("energyCertificate")
+        )
+        item["tipo_propiedad"] = raw.get("rawPropertySubtype") or raw.get("typology")
 
         # Localizacion
         addr = raw.get("address") or {}

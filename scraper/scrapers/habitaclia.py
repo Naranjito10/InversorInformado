@@ -33,9 +33,9 @@ class HabitacliaScraper(BaseScraper):
                     url = title_link["href"] if title_link and title_link.get("href") else ""
                 if not url:
                     continue
-                # Limpiar params de tracking
+                # Limpiar params de tracking y hacer URL absoluta
                 url = url.split("?")[0]
-                item["url"] = url
+                item["url"] = urljoin(self.BASE, url) if not url.startswith("http") else url
 
                 # Título
                 title_a = card.select_one("h3.list-item-title a")

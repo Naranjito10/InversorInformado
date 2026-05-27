@@ -109,7 +109,7 @@ interface PreviewRow {
 // Manual form
 // ---------------------------------------------------------------------------
 
-const ESTADOS = ["nuevo", "buen estado", "a reformar"];
+const ESTADOS = ["nuevo", "buen estado", "Ocupado", "Alquilado", "Mal estado", "Reforma Crítica", "Reforma Menor / A Reformar", "Nuda Propiedad"];
 const CEE = ["A", "B", "C", "D", "E", "F", "G"];
 
 const emptyForm = (): ManualListingIn => ({ url: "", fuente: "" });
@@ -173,7 +173,7 @@ function ManualForm() {
       </div>
 
       {/* Precio y superficie */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {(
           [
             ["precio_venta", "Precio venta (€)", "250000"],
@@ -192,6 +192,15 @@ function ManualForm() {
             />
           </div>
         ))}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium text-gray-700">Planta</label>
+          <input
+            type="text" placeholder="ej: 3, Bajo, Ático"
+            value={form.planta ?? ""}
+            onChange={(e) => set("planta", e.target.value || undefined)}
+            className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
       </div>
 
       {/* Localización */}
@@ -327,7 +336,7 @@ const COLUMN_DOCS: {
   { key: "municipio",             tipo: "Texto",   req: false, desc: "Ciudad o municipio",                    valores: "Cualquier texto — ej: Barcelona" },
   { key: "barrio",                tipo: "Texto",   req: false, desc: "Barrio o distrito",                     valores: "Cualquier texto — ej: Eixample" },
   { key: "provincia",             tipo: "Texto",   req: false, desc: "Provincia",                             valores: "Cualquier texto — ej: Barcelona" },
-  { key: "estado",                tipo: "Texto",   req: false, desc: "Estado del inmueble",                   valores: "nuevo · buen estado · a reformar" },
+  { key: "estado",                tipo: "Texto",   req: false, desc: "Estado del inmueble",                   valores: "nuevo · buen estado · Ocupado · Alquilado · Mal estado · Reforma Crítica · Reforma Menor / A Reformar · Nuda Propiedad" },
   { key: "ascensor",              tipo: "Booleano",req: false, desc: "Dispone de ascensor",                   valores: "true / false / 1 / 0 / si / no" },
   { key: "terraza",               tipo: "Booleano",req: false, desc: "Dispone de terraza",                    valores: "true / false / 1 / 0 / si / no" },
   { key: "garaje",                tipo: "Booleano",req: false, desc: "Incluye garaje",                        valores: "true / false / 1 / 0 / si / no" },
