@@ -50,7 +50,7 @@ export default function InformeNuevo() {
           metros: selectedListing.metros_cuadrados ?? 0,
           habitaciones: selectedListing.habitaciones ?? 0,
           banos: selectedListing.banos ?? 0,
-          estado: selectedListing.estado ?? "",
+          condition: selectedListing.condition ?? "",
           url: selectedListing.url,
           cee: selectedListing.cee ?? undefined,
         },
@@ -76,7 +76,7 @@ export default function InformeNuevo() {
         precio: selectedListing.precio_venta ?? 0,
         metros: selectedListing.metros_cuadrados ?? 0,
         habitaciones: selectedListing.habitaciones ?? 0,
-        estado: selectedListing.estado ?? "",
+        condition: selectedListing.condition ?? "",
       });
       setMarket({ ...est, ai_estimated: true });
       if ((est as { verdict?: string }).verdict && !verdict) {
@@ -119,7 +119,7 @@ export default function InformeNuevo() {
           onChange={(e) => setSearch(e.target.value)}
           className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
-        {listings.length > 0 && !selectedListing && (
+        {listings.length > 0 && search && (
           <div className="border border-gray-200 rounded-lg overflow-hidden max-h-52 overflow-y-auto">
             {listings.map((l) => (
               <button
@@ -182,8 +182,8 @@ export default function InformeNuevo() {
               {selectedListing.barrio && (
                 <span className="bg-white border border-blue-100 text-gray-600 px-2 py-1 rounded-full">📍 {selectedListing.barrio}, {selectedListing.municipio}</span>
               )}
-              {selectedListing.estado && (
-                <span className="bg-white border border-blue-100 text-gray-600 px-2 py-1 rounded-full">🏠 {selectedListing.estado}</span>
+              {selectedListing.condition && (
+                <span className="bg-white border border-blue-100 text-gray-600 px-2 py-1 rounded-full">🏠 {selectedListing.condition}</span>
               )}
               {selectedListing.planta && (
                 <span className="bg-white border border-blue-100 text-gray-600 px-2 py-1 rounded-full">🔢 Planta {selectedListing.planta}</span>

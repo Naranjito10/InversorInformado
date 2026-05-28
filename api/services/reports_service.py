@@ -143,7 +143,7 @@ Datos del piso:
 - Precio: {property_data.get('precio', '?')} €
 - Metros: {property_data.get('metros', '?')} m²
 - Habitaciones: {property_data.get('habitaciones', '?')}
-- Estado: {property_data.get('estado', '?')}
+- Estado: {property_data.get('condition', '?')}
 
 Devuelve ÚNICAMENTE JSON válido con estos campos (sin markdown, sin explicaciones):
 {{

@@ -22,10 +22,33 @@ const LABEL_STYLES: Record<string, string> = {
 const fmt = (n?: number) =>
   n != null ? n.toLocaleString("es-ES") + " €" : "—";
 
-const ESTADOS = [
-  "nuevo", "buen estado", "Ocupado", "Alquilado",
-  "Mal estado", "Reforma Crítica", "Reforma Menor / A Reformar", "Nuda Propiedad",
+const CONDITIONS: [string, string][] = [
+  ["obra_nueva", "Nuevo"],
+  ["listo_para_usar", "Listo para usar"],
+  ["buen_estado", "Usado pero bien"],
+  ["reforma_leve", "Reforma leve necesaria"],
+  ["reforma_integral", "Reforma Integral / A reformar"],
+  ["reforma_estructural", "Reforma estructural necesaria"],
 ];
+
+const OCUPACION_OPTIONS: [string, string][] = [
+  ["libre", "Libre / Desocupado"],
+  ["ocupado", "Ocupado"],
+  ["alquilado", "Alquilado"],
+  ["nuda_propiedad", "Nuda propiedad"],
+];
+
+const SITUACION_LEGAL_OPTIONS: [string, string][] = [
+  ["libre_cargas", "Libre de cargas"],
+  ["con_hipoteca", "Con hipoteca"],
+  ["en_construccion", "En construcción"],
+  ["renta_antigua", "Renta antigua"],
+  ["vpo", "VPO / Protección oficial"],
+  ["subasta", "En subasta"],
+  ["litigio", "En litigio"],
+  ["herencia", "Herencia / En trámite"],
+];
+
 const CEE_OPTIONS = ["A", "B", "C", "D", "E", "F", "G"];
 
 function listingToForm(l: Listing): ManualListingIn {
@@ -41,13 +64,34 @@ function listingToForm(l: Listing): ManualListingIn {
     municipio: l.municipio,
     barrio: l.barrio,
     provincia: l.provincia,
-    estado: l.estado,
+    condition: l.condition,
+    ocupacion: l.ocupacion,
+    situacion_legal: l.situacion_legal,
     ascensor: l.ascensor,
     terraza: l.terraza,
     garaje: l.garaje,
     certificado_energetico: l.cee,
     alquiler_estimado: l.alquiler_estimado,
     precio_zona_m2: l.precio_zona_m2,
+    balcon: l.balcon,
+    trastero: l.trastero,
+    armarios_empotrados: l.armarios_empotrados,
+    aire_acondicionado: l.aire_acondicionado,
+    calefaccion: l.calefaccion,
+    cocina_equipada: l.cocina_equipada,
+    amueblado: l.amueblado,
+    exterior: l.exterior,
+    portero: l.portero,
+    puerta_blindada: l.puerta_blindada,
+    doble_acristalamiento: l.doble_acristalamiento,
+    adaptado_movilidad: l.adaptado_movilidad,
+    jardin: l.jardin,
+    piscina: l.piscina,
+    piscina_comunitaria: l.piscina_comunitaria,
+    zonas_verdes_comunitarias: l.zonas_verdes_comunitarias,
+    vigilancia: l.vigilancia,
+    garaje_incluido: l.garaje_incluido,
+    num_plazas_garaje: l.num_plazas_garaje,
   };
 }
 
@@ -242,18 +286,44 @@ function ListingDrawer({ listing, onClose }: DrawerProps) {
               ))}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            {/* Clasificación */}
+            <div className="grid grid-cols-1 gap-3">
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-gray-700">Estado</label>
+                <label className="text-sm font-medium text-gray-700">Condición</label>
                 <select
-                  value={form.estado ?? ""}
-                  onChange={(e) => set("estado", e.target.value)}
+                  value={form.condition ?? ""}
+                  onChange={(e) => set("condition", e.target.value)}
                   className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">— sin especificar —</option>
-                  {ESTADOS.map((s) => <option key={s} value={s}>{s}</option>)}
+                  {CONDITIONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                 </select>
               </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-gray-700">Ocupación</label>
+                <select
+                  value={form.ocupacion ?? ""}
+                  onChange={(e) => set("ocupacion", e.target.value)}
+                  className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">— sin especificar —</option>
+                  {OCUPACION_OPTIONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                </select>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-gray-700">Situación legal</label>
+                <select
+                  value={form.situacion_legal ?? ""}
+                  onChange={(e) => set("situacion_legal", e.target.value)}
+                  className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">— sin especificar —</option>
+                  {SITUACION_LEGAL_OPTIONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium text-gray-700">CEE</label>
                 <select
@@ -289,8 +359,16 @@ function ListingDrawer({ listing, onClose }: DrawerProps) {
               </div>
             </div>
 
-            <div className="flex gap-6">
-              {(["ascensor", "terraza", "garaje"] as (keyof ManualListingIn)[]).map((k) => (
+            {/* Características del edificio */}
+            <div className="flex flex-wrap gap-4">
+              {(
+                [
+                  ["ascensor", "Ascensor"], ["terraza", "Terraza"], ["garaje", "Garaje"],
+                  ["exterior", "Exterior"], ["portero", "Portero"],
+                  ["puerta_blindada", "Puerta blindada"], ["doble_acristalamiento", "Doble acristalamiento"],
+                  ["adaptado_movilidad", "Adaptado movilidad"],
+                ] as [keyof ManualListingIn, string][]
+              ).map(([k, label]) => (
                 <label key={k} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
                   <input
                     type="checkbox"
@@ -298,9 +376,61 @@ function ListingDrawer({ listing, onClose }: DrawerProps) {
                     onChange={(e) => set(k, e.target.checked ? true : undefined)}
                     className="w-4 h-4 accent-blue-600"
                   />
-                  {k.charAt(0).toUpperCase() + k.slice(1)}
+                  {label}
                 </label>
               ))}
+            </div>
+
+            {/* Amenidades interiores */}
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Interior</p>
+              <div className="flex flex-wrap gap-4">
+                {(
+                  [
+                    ["balcon", "Balcón"], ["trastero", "Trastero"],
+                    ["armarios_empotrados", "Armarios empotrados"],
+                    ["aire_acondicionado", "Aire acondicionado"],
+                    ["calefaccion", "Calefacción"], ["cocina_equipada", "Cocina equipada"],
+                    ["amueblado", "Amueblado"],
+                  ] as [keyof ManualListingIn, string][]
+                ).map(([k, label]) => (
+                  <label key={k} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(form[k])}
+                      onChange={(e) => set(k, e.target.checked ? true : undefined)}
+                      className="w-4 h-4 accent-blue-600"
+                    />
+                    {label}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Zonas comunes */}
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Zonas comunes</p>
+              <div className="flex flex-wrap gap-4">
+                {(
+                  [
+                    ["jardin", "Jardín"], ["piscina", "Piscina privada"],
+                    ["piscina_comunitaria", "Piscina comunitaria"],
+                    ["zonas_verdes_comunitarias", "Zonas verdes"],
+                    ["vigilancia", "Vigilancia"],
+                    ["garaje_incluido", "Garaje incluido en precio"],
+                  ] as [keyof ManualListingIn, string][]
+                ).map(([k, label]) => (
+                  <label key={k} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(form[k])}
+                      onChange={(e) => set(k, e.target.checked ? true : undefined)}
+                      className="w-4 h-4 accent-blue-600"
+                    />
+                    {label}
+                  </label>
+                ))}
+              </div>
             </div>
 
             <div className="grid grid-cols-3 gap-3 p-4 bg-gray-50 rounded-xl border border-gray-100 text-sm">

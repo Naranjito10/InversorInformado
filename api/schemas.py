@@ -14,7 +14,10 @@ class ListingOut(BaseModel):
     banos: Optional[int] = None
     barrio: Optional[str] = None
     municipio: Optional[str] = None
-    estado: Optional[str] = None
+    status: Optional[str] = None
+    condition: Optional[str] = None
+    ocupacion: Optional[str] = None
+    situacion_legal: Optional[str] = None
     ascensor: Optional[bool] = None
     terraza: Optional[bool] = None
     garaje: Optional[bool] = None
@@ -24,7 +27,6 @@ class ListingOut(BaseModel):
     score_label: Optional[str] = None
     bajada_precio: Optional[bool] = None
     dias_en_mercado: Optional[int] = None
-    activo: Optional[bool] = None
     primera_deteccion: Optional[str] = None
     ultima_actualizacion: Optional[str] = None
 
@@ -74,13 +76,37 @@ class ManualListingIn(BaseModel):
     municipio: Optional[str] = None
     barrio: Optional[str] = None
     provincia: Optional[str] = None
-    estado: Optional[str] = None
+    planta: Optional[str] = None
+    condition: Optional[str] = None
+    ocupacion: Optional[str] = None
+    situacion_legal: Optional[str] = None
     ascensor: Optional[bool] = None
     terraza: Optional[bool] = None
     garaje: Optional[bool] = None
     certificado_energetico: Optional[str] = None
     alquiler_estimado: Optional[int] = None
     precio_zona_m2: Optional[int] = None
+    balcon: Optional[bool] = None
+    trastero: Optional[bool] = None
+    armarios_empotrados: Optional[bool] = None
+    aire_acondicionado: Optional[bool] = None
+    calefaccion: Optional[bool] = None
+    calefaccion_tipo: Optional[str] = None
+    cocina_equipada: Optional[bool] = None
+    amueblado: Optional[bool] = None
+    exterior: Optional[bool] = None
+    orientacion: Optional[str] = None
+    portero: Optional[bool] = None
+    puerta_blindada: Optional[bool] = None
+    doble_acristalamiento: Optional[bool] = None
+    adaptado_movilidad: Optional[bool] = None
+    jardin: Optional[bool] = None
+    piscina: Optional[bool] = None
+    piscina_comunitaria: Optional[bool] = None
+    zonas_verdes_comunitarias: Optional[bool] = None
+    vigilancia: Optional[bool] = None
+    garaje_incluido: Optional[bool] = None
+    num_plazas_garaje: Optional[int] = None
 
 
 class CheckUrlsRequest(BaseModel):
