@@ -120,7 +120,7 @@ def run_target(target: dict, stats: RunStats) -> Optional[set[str]]:
             if not existed_before:
                 near_dup = find_near_duplicate(listing)
                 if near_dup:
-                    listing.pending_review = True
+                    listing.status = "pendiente_revision"
                     listing.duplicate_candidate_of = near_dup["url"]
                     log.info(
                         "duplicate_candidate_detected",

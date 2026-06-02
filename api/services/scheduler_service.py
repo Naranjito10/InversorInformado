@@ -19,7 +19,7 @@ def get_top_properties_for_weekly(limit: int = 5) -> list[dict]:
     res = (
         client.table("listings")
         .select("id, titulo, barrio, municipio, precio_venta, metros_cuadrados, habitaciones, score, url")
-        .eq("activo", True)
+        .eq("status", "activo")
         .or_(f"last_featured_at.is.null,last_featured_at.lt.{cutoff}")
         .order("score", desc=True)
         .limit(limit)

@@ -21,7 +21,7 @@ def format_alert_message(listing: dict) -> str:
     precio_m2 = listing.get("precio_m2")
     metros = listing.get("metros_cuadrados") or "—"
     habs = listing.get("habitaciones") or "—"
-    estado = listing.get("estado") or "—"
+    condition = listing.get("condition") or "—"
     rb = listing.get("rentabilidad_bruta")
     bajada = listing.get("bajada_precio")
     url = listing.get("url") or ""
@@ -36,7 +36,7 @@ def format_alert_message(listing: dict) -> str:
         f"🏠 NUEVA OPORTUNIDAD [score: {score}/100]\n"
         f"📍 Barrio: {barrio}, {municipio}\n"
         f"💶 Precio: {precio_fmt} ({precio_m2_fmt})\n"
-        f"📐 {metros}m² · {habs}hab · {estado}\n"
+        f"📐 {metros}m² · {habs}hab · {condition}\n"
         f"📈 Rentabilidad estimada: {rb_fmt}\n"
         f"{bajada_line}"
         f"🔗 {url}"
@@ -52,7 +52,7 @@ def format_alert_html(listing: dict) -> str:
     precio_m2 = listing.get("precio_m2")
     metros = listing.get("metros_cuadrados") or "—"
     habs = listing.get("habitaciones") or "—"
-    estado = listing.get("estado") or "—"
+    condition = listing.get("condition") or "—"
     rb = listing.get("rentabilidad_bruta")
     url = listing.get("url") or "#"
     bajada = listing.get("bajada_precio")
@@ -80,7 +80,7 @@ def format_alert_html(listing: dict) -> str:
       <tr><td>💶 Precio</td><td><strong>{precio_fmt}</strong> ({precio_m2_fmt})</td></tr>
       <tr><td>📐 Superficie</td><td>{metros} m²</td></tr>
       <tr><td>🛏 Habitaciones</td><td>{habs}</td></tr>
-      <tr><td>🔧 Estado</td><td>{estado}</td></tr>
+      <tr><td>🔧 Estado</td><td>{condition}</td></tr>
       <tr><td>📈 Rentabilidad bruta</td><td><strong>{rb_fmt}</strong></td></tr>
     </table>
     <p style="margin-top:16px;">

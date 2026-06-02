@@ -12,7 +12,11 @@ export interface Listing {
   barrio?: string;
   municipio?: string;
   provincia?: string;
-  estado?: string;
+  status?: string;
+  condition?: string;
+  ocupacion?: string;
+  situacion_legal?: string;
+  disabled_reason?: string;
   ascensor?: boolean;
   terraza?: boolean;
   garaje?: boolean;
@@ -22,12 +26,36 @@ export interface Listing {
   score_label?: string;
   bajada_precio?: boolean;
   dias_en_mercado?: number;
-  activo?: boolean;
   cee?: string;
   alquiler_estimado?: number;
   precio_zona_m2?: number;
   primera_deteccion?: string;
   ultima_actualizacion?: string;
+  // Amenidades interiores
+  balcon?: boolean;
+  trastero?: boolean;
+  armarios_empotrados?: boolean;
+  aire_acondicionado?: boolean;
+  calefaccion?: boolean;
+  calefaccion_tipo?: string;
+  cocina_equipada?: boolean;
+  amueblado?: boolean;
+  // Edificio
+  exterior?: boolean;
+  orientacion?: string;
+  portero?: boolean;
+  puerta_blindada?: boolean;
+  doble_acristalamiento?: boolean;
+  adaptado_movilidad?: boolean;
+  // Zonas exteriores / comunidad
+  jardin?: boolean;
+  piscina?: boolean;
+  piscina_comunitaria?: boolean;
+  zonas_verdes_comunitarias?: boolean;
+  vigilancia?: boolean;
+  // Garaje
+  garaje_incluido?: boolean;
+  num_plazas_garaje?: number;
 }
 
 export interface Stats {
@@ -69,7 +97,7 @@ export interface ReportProperty {
   metros: number;
   habitaciones: number;
   banos: number;
-  estado: string;
+  condition?: string;
   url: string;
   cee?: string;
 }

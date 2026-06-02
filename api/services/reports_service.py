@@ -23,8 +23,8 @@ def _format_price(value):
     """Convierte 385000 → '385.000'"""
     try:
         return f"{int(value):,}".replace(",", ".")
-    except (TypeError, ValueError):
-        return str(value)
+    except Exception:
+        return "—"
 
 _jinja_env.filters["format_price"] = _format_price
 
@@ -143,7 +143,7 @@ Datos del piso:
 - Precio: {property_data.get('precio', '?')} €
 - Metros: {property_data.get('metros', '?')} m²
 - Habitaciones: {property_data.get('habitaciones', '?')}
-- Estado: {property_data.get('estado', '?')}
+- Estado: {property_data.get('condition', '?')}
 
 Devuelve ÚNICAMENTE JSON válido con estos campos (sin markdown, sin explicaciones):
 {{
