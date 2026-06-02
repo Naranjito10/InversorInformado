@@ -104,7 +104,7 @@ def detect_features(text: str) -> dict[str, Optional[bool]]:
 
 
 def detect_estado(text: str) -> Optional[str]:
-    """Detecta estado en texto libre."""
+    """Detecta estado en texto libre. Devuelve valor crudo para _to_condition."""
     if not text:
         return None
     s = text.lower()
@@ -115,6 +115,22 @@ def detect_estado(text: str) -> Optional[str]:
     if "buen estado" in s or "reformado" in s or "segunda mano" in s:
         return "buen estado"
     return None
+
+
+_ESTADO_TO_CONDITION = {
+    "nuevo": "obra_nueva",
+    "obra nueva": "obra_nueva",
+    "buen estado": "buen_estado",
+    "a reformar": "reforma_integral",
+    "para reformar": "reforma_integral",
+}
+
+
+def _to_condition(raw: Optional[str]) -> Optional[str]:
+    """Convierte valor crudo de estado al enum condition del modelo."""
+    if not raw:
+        return None
+    return _ESTADO_TO_CONDITION.get(raw.lower().strip(), raw)
 
 
 def detect_cee(text: str) -> Optional[str]:
@@ -237,7 +253,7 @@ def normalize(source: str, raw: dict[str, Any]) -> Listing:
         ascensor=raw.get("ascensor") if isinstance(raw.get("ascensor"), bool) else feats["ascensor"],
         terraza=raw.get("terraza") if isinstance(raw.get("terraza"), bool) else feats["terraza"],
         garaje=raw.get("garaje") if isinstance(raw.get("garaje"), bool) else feats["garaje"],
-        estado=clean_str(raw.get("estado")) or detect_estado(description),
+        condition=_to_condition(clean_str(raw.get("estado")) or detect_estado(description)),
         certificado_energetico=clean_str(raw.get("certificado_energetico"))
                                or detect_cee(description),
 
