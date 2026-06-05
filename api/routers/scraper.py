@@ -1,8 +1,9 @@
 from __future__ import annotations
-from fastapi import APIRouter, BackgroundTasks, HTTPException
+from fastapi import APIRouter, HTTPException
 from api.schemas import SearchRequest, SearchResponse
 from api.services import scraper_service
 from scraper import state as scraper_state
+from scraper import queue_worker
 
 router = APIRouter(prefix="/api/scraper", tags=["scraper"])
 
@@ -19,15 +20,19 @@ def dismiss_status():
 
 
 @router.post("/run")
-def run_cycle(background_tasks: BackgroundTasks):
+def run_cycle():
     """Lanza un ciclo completo con los targets de search_targets.json."""
-    scraper_state.set_running(message="Preparando ciclo completo...")
-    background_tasks.add_task(scraper_service.run_cycle_background)
+    current = scraper_state.get()
+    if current["running"]:
+        scraper_state.inc_queued()
+    else:
+        scraper_state.set_running(message="Preparando ciclo completo...")
+    queue_worker.submit(scraper_service.run_cycle_background)
     return {"status": "queued", "message": "Ciclo de scraping iniciado en background"}
 
 
 @router.post("/search", response_model=SearchResponse)
-def custom_search(req: SearchRequest, background_tasks: BackgroundTasks):
+def custom_search(req: SearchRequest):
     """Lanza una búsqueda personalizada por zona, portales y precio."""
     targets = scraper_service.build_search_targets(
         zona_label=req.zona,
@@ -43,9 +48,14 @@ def custom_search(req: SearchRequest, background_tasks: BackgroundTasks):
             detail=f"Zona '{req.zona}' no encontrada o sin portales disponibles",
         )
 
-    portales_str = ", ".join(req.portales)
-    scraper_state.set_running(message=f"Preparando búsqueda en {portales_str}...")
-    background_tasks.add_task(scraper_service.run_targets_background, targets)
+    current = scraper_state.get()
+    if current["running"]:
+        scraper_state.inc_queued()
+    else:
+        portales_str = ", ".join(req.portales)
+        scraper_state.set_running(message=f"Preparando búsqueda en {portales_str}...")
+
+    queue_worker.submit(scraper_service.run_targets_background, targets)
 
     return SearchResponse(
         status="queued",
