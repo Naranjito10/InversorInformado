@@ -59,9 +59,9 @@ export default function Comunicaciones() {
           <button
             onClick={() => weeklyMutation.mutate()}
             disabled={weeklyMutation.isPending}
-            className="text-sm bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors"
+            className="text-sm bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
           >
-            {weeklyMutation.isPending ? "Generando..." : "▶ Ejecutar ahora"}
+            {weeklyMutation.isPending ? "Generando..." : "Ejecutar ahora"}
           </button>
           {weeklyMutation.isSuccess && (
             <span className="text-sm text-green-600">

@@ -43,7 +43,20 @@ export interface ListingFilters {
   precio_max?: number;
   solo_activos?: boolean;
   limit?: number;
+  q?: string;
 }
+
+export interface ZonaOption {
+  tipo: "municipio" | "barrio";
+  valor: string;
+  label: string;
+  municipio?: string;
+}
+
+export const fetchListingZonas = async (): Promise<ZonaOption[]> => {
+  const { data } = await api.get<ZonaOption[]>("/listings/zonas");
+  return data;
+};
 
 export const fetchListings = async (filters: ListingFilters = {}): Promise<Listing[]> => {
   const { data } = await api.get<Listing[]>("/listings", { params: filters });
@@ -361,6 +374,28 @@ export const generateWeeklyReport = async (): Promise<{
 }> => {
   const { data } = await api.post("/telegram/generate-weekly");
   return data;
+};
+
+export interface ScraperStatus {
+  running: boolean;
+  done: boolean;
+  event: string | null;
+  message: string | null;
+  portal: string | null;
+  new: number;
+  updated: number;
+  errors: number;
+  started_at: string | null;
+  finished_at: string | null;
+}
+
+export const fetchScraperStatus = async (): Promise<ScraperStatus> => {
+  const { data } = await api.get<ScraperStatus>("/scraper/status");
+  return data;
+};
+
+export const dismissScraperStatus = async (): Promise<void> => {
+  await api.post("/scraper/status/dismiss");
 };
 
 export const publishTelegram = async (req: {

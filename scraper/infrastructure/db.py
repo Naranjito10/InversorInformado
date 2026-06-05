@@ -20,6 +20,17 @@ except ImportError:
 
 _client: Optional["Client"] = None
 
+_DISCONNECT_SIGNALS = ("server disconnected", "remoteerror", "remoteprotocolerror")
+
+
+def _is_disconnect(exc: Exception) -> bool:
+    return any(s in str(exc).lower() for s in _DISCONNECT_SIGNALS)
+
+
+def _reset_client() -> None:
+    global _client
+    _client = None
+
 
 def get_client() -> Optional["Client"]:
     """Devuelve el cliente Supabase (singleton), o None si no esta configurado."""
@@ -38,21 +49,26 @@ def get_client() -> Optional["Client"]:
 
 def get_existing(url: str) -> Optional[dict]:
     """Devuelve la fila existente para una URL, o None."""
-    client = get_client()
-    if client is None:
-        return None
-    try:
-        res = (
-            client.table("listings")
-            .select("*")
-            .eq("url", url)
-            .limit(1)
-            .execute()
-        )
-        if res.data:
-            return res.data[0]
-    except Exception as exc:  # noqa: BLE001
-        log.error("db_get_failed", extra={"url": url, "error": str(exc)})
+    for attempt in range(2):
+        client = get_client()
+        if client is None:
+            return None
+        try:
+            res = (
+                client.table("listings")
+                .select("*")
+                .eq("url", url)
+                .limit(1)
+                .execute()
+            )
+            return res.data[0] if res.data else None
+        except Exception as exc:  # noqa: BLE001
+            if attempt == 0 and _is_disconnect(exc):
+                log.warning("db_reconnecting", extra={"url": url})
+                _reset_client()
+                continue
+            log.error("db_get_failed", extra={"url": url, "error": str(exc)})
+            return None
     return None
 
 
@@ -66,63 +82,68 @@ def upsert_listing(listing: Listing) -> Optional[dict]:
       Nunca sobrescribe status, disabled_reason ni duplicate_candidate_of en updates.
     - El trigger SQL recalcula derivados (precio_m2, rentabilidad, score, etc.)
     """
-    client = get_client()
-    if client is None:
-        return None
-
     payload = listing.to_db_dict()
     existing = get_existing(listing.url)
     now = datetime.now(timezone.utc).isoformat()
 
-    try:
-        if existing is None:
-            payload["primera_deteccion"] = now
-            payload["ultima_actualizacion"] = now
-            payload["veces_visto"] = 1
-            res = client.table("listings").insert(payload).execute()
+    for attempt in range(2):
+        client = get_client()
+        if client is None:
+            return None
+        try:
+            if existing is None:
+                payload["primera_deteccion"] = now
+                payload["ultima_actualizacion"] = now
+                payload["veces_visto"] = 1
+                res = client.table("listings").insert(payload).execute()
+                log.info(
+                    "listing_inserted",
+                    extra={"url": listing.url, "fuente": listing.fuente,
+                           "precio": listing.precio_venta},
+                )
+                return res.data[0] if res.data else None
+
+            # Actualizacion
+            update_payload = {**payload}
+            update_payload["veces_visto"] = (existing.get("veces_visto") or 1) + 1
+            update_payload["ultima_actualizacion"] = now
+
+            # Nunca sobrescribir en re-scrape — preservar estado gestionado manualmente
+            update_payload.pop("status", None)
+            update_payload.pop("disabled_reason", None)
+            update_payload.pop("duplicate_candidate_of", None)
+            update_payload.pop("primera_deteccion", None)
+
+            old_price = existing.get("precio_venta")
+            new_price = listing.precio_venta
+            if old_price and new_price and new_price < old_price:
+                update_payload["bajada_precio"] = True
+
+            res = (
+                client.table("listings")
+                .update(update_payload)
+                .eq("url", listing.url)
+                .execute()
+            )
             log.info(
-                "listing_inserted",
-                extra={"url": listing.url, "fuente": listing.fuente,
-                       "precio": listing.precio_venta},
+                "listing_updated",
+                extra={
+                    "url": listing.url,
+                    "fuente": listing.fuente,
+                    "old_price": old_price,
+                    "new_price": new_price,
+                },
             )
             return res.data[0] if res.data else None
 
-        # Actualizacion
-        update_payload = {**payload}
-        update_payload["veces_visto"] = (existing.get("veces_visto") or 1) + 1
-        update_payload["ultima_actualizacion"] = now
-
-        # Nunca sobrescribir en re-scrape — preservar estado gestionado manualmente
-        update_payload.pop("status", None)
-        update_payload.pop("disabled_reason", None)
-        update_payload.pop("duplicate_candidate_of", None)
-        update_payload.pop("primera_deteccion", None)
-
-        old_price = existing.get("precio_venta")
-        new_price = listing.precio_venta
-        if old_price and new_price and new_price < old_price:
-            update_payload["bajada_precio"] = True
-
-        res = (
-            client.table("listings")
-            .update(update_payload)
-            .eq("url", listing.url)
-            .execute()
-        )
-        log.info(
-            "listing_updated",
-            extra={
-                "url": listing.url,
-                "fuente": listing.fuente,
-                "old_price": old_price,
-                "new_price": new_price,
-            },
-        )
-        return res.data[0] if res.data else None
-
-    except Exception as exc:  # noqa: BLE001
-        log.error("db_upsert_failed", extra={"url": listing.url, "error": str(exc)})
-        return None
+        except Exception as exc:  # noqa: BLE001
+            if attempt == 0 and _is_disconnect(exc):
+                log.warning("db_reconnecting", extra={"url": listing.url})
+                _reset_client()
+                continue
+            log.error("db_upsert_failed", extra={"url": listing.url, "error": str(exc)})
+            return None
+    return None
 
 
 def mark_inactive(urls_seen: set[str], source: str) -> int:
@@ -158,10 +179,11 @@ def mark_inactive(urls_seen: set[str], source: str) -> int:
         return 0
 
 
-def find_near_duplicate(listing: "Listing", tolerance: float = 0.10) -> Optional[dict]:
+def find_near_duplicate(listing: "Listing", tolerance: float = 0.05) -> Optional[dict]:
     """
-    Busca un anuncio activo que sea probablemente el mismo piso:
-    mismo municipio, precio y metros_cuadrados dentro de ±tolerance, habitaciones igual.
+    Busca un anuncio activo que sea probablemente el mismo piso publicado en otro portal:
+    mismo municipio+barrio (si disponible), precio y metros_cuadrados dentro de ±tolerance,
+    mismas habitaciones. Tolerancia estrecha (5%) para evitar falsos positivos.
     """
     client = get_client()
     if client is None:
@@ -187,6 +209,9 @@ def find_near_duplicate(listing: "Listing", tolerance: float = 0.10) -> Optional
         )
         if listing.habitaciones is not None:
             q = q.eq("habitaciones", listing.habitaciones)
+        # Barrio is required when available — prevents false positives in large cities
+        if listing.barrio:
+            q = q.eq("barrio", listing.barrio)
 
         res = q.limit(1).execute()
         return res.data[0] if res.data else None
@@ -361,9 +386,13 @@ def query_listings(filters: dict | None = None, limit: int = 1000) -> list[dict]
     filters = filters or {}
     try:
         q = client.table("listings").select("*")
-        for key in ("municipio", "barrio", "fuente", "score_label"):
-            if filters.get(key):
-                q = q.eq(key, filters[key])
+        if filters.get("q"):
+            term = filters["q"].replace("%", "").replace("_", "")
+            q = q.or_(f"municipio.ilike.%{term}%,barrio.ilike.%{term}%,titulo.ilike.%{term}%")
+        else:
+            for key in ("municipio", "barrio", "fuente", "score_label"):
+                if filters.get(key):
+                    q = q.eq(key, filters[key])
         if "activo" in filters:
             if filters["activo"]:
                 q = q.eq("status", "activo")

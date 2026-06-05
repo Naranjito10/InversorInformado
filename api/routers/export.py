@@ -1,9 +1,13 @@
 from __future__ import annotations
+
 import tempfile
 from pathlib import Path
 from typing import Optional
+
 from fastapi import APIRouter, Query
 from fastapi.responses import FileResponse
+
+from api.services.export_service import generate_excel
 
 router = APIRouter(prefix="/api/export", tags=["export"])
 
@@ -16,8 +20,6 @@ def export_excel(
     precio_min: Optional[int] = Query(None),
     precio_max: Optional[int] = Query(None),
 ):
-    from api.services.export_service import generate_excel
-
     filters = {}
     if municipio:
         filters["municipio"] = municipio

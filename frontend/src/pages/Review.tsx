@@ -63,19 +63,25 @@ function ListingDetails({ listing }: { listing: ListingSnippet | OriginalListing
 
 function ReviewCard({ listing }: { listing: PendingListing }) {
   const qc = useQueryClient();
-  const invalidate = () => qc.invalidateQueries({ queryKey: ["pending-review"] });
+  const removeFromCache = () => {
+    qc.setQueryData<PendingListing[]>(["pending-review"], (old) =>
+      old?.filter((item) => item.id !== listing.id) ?? []
+    );
+    qc.invalidateQueries({ queryKey: ["pending-review"] });
+    qc.invalidateQueries({ queryKey: ["pending-count"] });
+  };
 
   const approveMutation = useMutation({
     mutationFn: () => approveListing(listing.id),
-    onSuccess: invalidate,
+    onSuccess: removeFromCache,
   });
   const rejectMutation = useMutation({
     mutationFn: () => rejectListing(listing.id),
-    onSuccess: invalidate,
+    onSuccess: removeFromCache,
   });
   const keepNewMutation = useMutation({
     mutationFn: () => keepNewListing(listing.id),
-    onSuccess: invalidate,
+    onSuccess: removeFromCache,
   });
 
   const isPending =

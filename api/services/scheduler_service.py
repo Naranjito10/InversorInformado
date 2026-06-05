@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
-from typing import Optional
+import os
 
 import anthropic
 
 from scraper.infrastructure.db import get_client
 from scraper.services.alerts import publish_to_channel
 from scraper.infrastructure.logger import get_logger
+
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://inversorinformado.vercel.app")
 
 log = get_logger("scheduler")
 
@@ -49,7 +51,7 @@ def generate_weekly_text(properties: list[dict]) -> str:
     ai_client = anthropic.Anthropic()
     prompt = f"""Genera el informe semanal de oportunidades para el canal Telegram @inversorinformado.
 Formato: encabezado con semana y año, luego las oportunidades en formato HTML Telegram (<b>, <i>).
-Al final añade el footer: "💎 ¿Quieres análisis exclusivos? https://inversorinformado.vercel.app/login"
+Al final añade el footer: "💎 ¿Quieres análisis exclusivos? {FRONTEND_URL}/login"
 Máximo 10 líneas en total. Solo el texto, sin explicaciones.
 
 Oportunidades de esta semana:
@@ -95,7 +97,7 @@ def run_weekly_publish() -> dict:
     return {"status": status, "properties_featured": len(props), "preview": text[:120]}
 
 
-def init_scheduler(app) -> None:
+def init_scheduler() -> None:
     """Inicializa APScheduler y registra el job lunes+jueves a las 10:00."""
     from apscheduler.schedulers.background import BackgroundScheduler
 

@@ -1,5 +1,7 @@
-import { Routes, Route, NavLink } from "react-router-dom";
+import { Routes, Route, NavLink, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useRef, useState, useEffect } from "react";
+import ScraperToast from "./components/ScraperToast";
 import Dashboard from "./pages/Dashboard";
 import SearchForm from "./pages/SearchForm";
 import Monitor from "./pages/Monitor";
@@ -29,6 +31,114 @@ function PendingBadge() {
   );
 }
 
+function CargaDropdown() {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const location = useLocation();
+  const isActive = location.pathname === "/buscar" || location.pathname === "/carga";
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className={`flex items-center gap-1 transition-colors ${
+          isActive ? "text-blue-600 font-medium" : "text-gray-500 hover:text-gray-800"
+        }`}
+      >
+        Carga
+        <svg className={`w-3.5 h-3.5 transition-transform ${open ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      {open && (
+        <div className="absolute top-full left-0 mt-2 w-36 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50">
+          <NavLink
+            to="/buscar"
+            onClick={() => setOpen(false)}
+            className={({ isActive }) =>
+              `block px-4 py-2 text-sm ${isActive ? "text-blue-600 font-medium" : "text-gray-700 hover:bg-gray-50"}`
+            }
+          >
+            Automática
+          </NavLink>
+          <NavLink
+            to="/carga"
+            onClick={() => setOpen(false)}
+            className={({ isActive }) =>
+              `block px-4 py-2 text-sm ${isActive ? "text-blue-600 font-medium" : "text-gray-700 hover:bg-gray-50"}`
+            }
+          >
+            Manual
+          </NavLink>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MonitoreoDropdown() {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const location = useLocation();
+  const isActive = location.pathname === "/monitor" || location.pathname === "/revision";
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className={`flex items-center gap-1 transition-colors ${
+          isActive ? "text-blue-600 font-medium" : "text-gray-500 hover:text-gray-800"
+        }`}
+      >
+        Monitoreo
+        <PendingBadge />
+        <svg className={`w-3.5 h-3.5 transition-transform ${open ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      {open && (
+        <div className="absolute top-full left-0 mt-2 w-36 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50">
+          <NavLink
+            to="/monitor"
+            onClick={() => setOpen(false)}
+            className={({ isActive }) =>
+              `block px-4 py-2 text-sm ${isActive ? "text-blue-600 font-medium" : "text-gray-700 hover:bg-gray-50"}`
+            }
+          >
+            Logs
+          </NavLink>
+          <NavLink
+            to="/revision"
+            onClick={() => setOpen(false)}
+            className={({ isActive }) =>
+              `flex items-center px-4 py-2 text-sm ${isActive ? "text-blue-600 font-medium" : "text-gray-700 hover:bg-gray-50"}`
+            }
+          >
+            Revisión
+            <PendingBadge />
+          </NavLink>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AppLayout() {
   return (
     <div className="min-h-screen bg-gray-50">
@@ -43,39 +153,8 @@ function AppLayout() {
         >
           Dashboard
         </NavLink>
-        <NavLink
-          to="/buscar"
-          className={({ isActive }) =>
-            isActive ? "text-blue-600 font-medium" : "text-gray-500 hover:text-gray-800"
-          }
-        >
-          Carga Automática
-        </NavLink>
-        <NavLink
-          to="/carga"
-          className={({ isActive }) =>
-            isActive ? "text-blue-600 font-medium" : "text-gray-500 hover:text-gray-800"
-          }
-        >
-          Carga Manual
-        </NavLink>
-        <NavLink
-          to="/revision"
-          className={({ isActive }) =>
-            `flex items-center ${isActive ? "text-blue-600 font-medium" : "text-gray-500 hover:text-gray-800"}`
-          }
-        >
-          Revisión
-          <PendingBadge />
-        </NavLink>
-        <NavLink
-          to="/monitor"
-          className={({ isActive }) =>
-            isActive ? "text-blue-600 font-medium" : "text-gray-500 hover:text-gray-800"
-          }
-        >
-          Monitor
-        </NavLink>
+        <CargaDropdown />
+        <MonitoreoDropdown />
         <NavLink
           to="/informes"
           className={({ isActive }) =>
@@ -101,6 +180,7 @@ function AppLayout() {
         </button>
       </nav>
 
+      <ScraperToast />
       <main className="max-w-7xl mx-auto px-4 py-6">
         <Routes>
           <Route path="/" element={<Dashboard />} />

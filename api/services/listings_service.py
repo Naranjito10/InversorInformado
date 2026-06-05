@@ -1,10 +1,18 @@
 from __future__ import annotations
 from datetime import datetime, timedelta, timezone
+
+from pydantic import ValidationError
+
+from scraper.models import Listing
 from scraper.infrastructure.db import (
-    approve_pending, get_pending_review_listings, query_listings,
-    reject_pending, keep_new_listing as db_keep_new,
+    approve_pending, get_client, get_existing, get_pending_review_listings,
+    keep_new_listing as db_keep_new, query_listings, reject_pending,
+    upsert_listing,
 )
+from scraper.infrastructure.logger import get_logger
 from api.schemas import StatsOut
+
+log = get_logger("listings_service")
 
 
 def get_listings(filters: dict, limit: int = 200) -> list[dict]:
@@ -12,8 +20,6 @@ def get_listings(filters: dict, limit: int = 200) -> list[dict]:
 
 
 def create_manual_listing(data: dict) -> dict:
-    from scraper.models import Listing
-    from scraper.infrastructure.db import upsert_listing, get_existing
     from scraper.runner import _enrich_local_score
     listing = Listing(**data)
     _enrich_local_score(listing)
@@ -23,7 +29,6 @@ def create_manual_listing(data: dict) -> dict:
 
 
 def check_urls_exist(urls: list[str]) -> dict[str, bool]:
-    from scraper.infrastructure.db import get_client
     if not urls:
         return {}
     client = get_client()
@@ -33,15 +38,13 @@ def check_urls_exist(urls: list[str]) -> dict[str, bool]:
         res = client.table("listings").select("url").in_("url", urls).execute()
         existing = {row["url"] for row in (res.data or [])}
         return {url: url in existing for url in urls}
-    except Exception:
+    except Exception as exc:
+        log.error("check_urls_exist_failed", extra={"error": str(exc)})
         return {url: False for url in urls}
 
 
 def bulk_import_listings(listings: list[dict]) -> dict:
-    from scraper.models import Listing
-    from scraper.infrastructure.db import upsert_listing, get_existing
     from scraper.runner import _enrich_local_score
-    from pydantic import ValidationError
     inserted = updated = errors = 0
     error_details: list[dict] = []
     for item in listings:
@@ -81,6 +84,32 @@ def reject_listing(listing_id: str) -> bool:
 
 def keep_new_listing(listing_id: str) -> bool:
     return db_keep_new(listing_id)
+
+
+def get_zonas() -> list[dict]:
+    client = get_client()
+    if client is None:
+        return []
+    try:
+        res = client.table("listings").select("municipio,barrio").eq("status", "activo").limit(3000).execute()
+        rows = res.data or []
+
+        municipios = sorted({r["municipio"] for r in rows if r.get("municipio")})
+        barrios_by_muni: dict[str, set[str]] = {}
+        for r in rows:
+            if r.get("barrio") and r.get("municipio"):
+                barrios_by_muni.setdefault(r["municipio"], set()).add(r["barrio"])
+
+        result: list[dict] = []
+        for m in municipios:
+            result.append({"tipo": "municipio", "valor": m, "label": m})
+        for municipio, barrios in sorted(barrios_by_muni.items()):
+            for barrio in sorted(barrios):
+                result.append({"tipo": "barrio", "valor": barrio, "label": f"{barrio} · {municipio}", "municipio": municipio})
+        return result
+    except Exception as exc:
+        log.error("get_zonas_failed", extra={"error": str(exc)})
+        return []
 
 
 def get_stats() -> StatsOut:

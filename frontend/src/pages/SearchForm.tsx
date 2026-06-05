@@ -1,7 +1,9 @@
-import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useState, useRef, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchZones, runSearch, fetchFuentes } from "../services/api";
 import type { SearchRequest, SearchResponse } from "../types";
+import Modal from "../components/Modal";
+
 const PAGINAS = [10, 20, 50, 100];
 
 const initialForm: SearchRequest = {
@@ -13,8 +15,12 @@ const initialForm: SearchRequest = {
 };
 
 export default function SearchForm() {
+  const qc = useQueryClient();
   const [form, setForm] = useState<SearchRequest>(initialForm);
   const [result, setResult] = useState<SearchResponse | null>(null);
+  const [zonaInput, setZonaInput] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
+  const comboRef = useRef<HTMLDivElement>(null);
 
   const zonesQuery = useQuery({ queryKey: ["zones"], queryFn: fetchZones });
   const { data: fuentes = [] } = useQuery({
@@ -24,10 +30,50 @@ export default function SearchForm() {
   });
   const portales = fuentes.filter((f) => f.activo && f.id !== "manual");
 
+  const zonasSugeridas = zonaInput.trim().length === 0
+    ? (zonesQuery.data ?? [])
+    : (zonesQuery.data ?? []).filter((z) =>
+        z.label.toLowerCase().includes(zonaInput.toLowerCase())
+      );
+
+  const zoneMatch = zonesQuery.data?.find((z) => z.label === form.zona);
+
+  // Cerrar dropdown al hacer click fuera
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (comboRef.current && !comboRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const selectZona = (label: string) => {
+    setForm((f) => ({ ...f, zona: label, portales: [] }));
+    setZonaInput(label);
+    setShowDropdown(false);
+  };
+
+  const handleZonaInput = (value: string) => {
+    setZonaInput(value);
+    setForm((f) => ({ ...f, zona: "", portales: [] }));
+    setShowDropdown(true);
+  };
+
   const searchMutation = useMutation({
     mutationFn: runSearch,
-    onSuccess: (data) => setResult(data),
+    onSuccess: (data) => {
+      setResult(data);
+      qc.invalidateQueries({ queryKey: ["scraper-status"] });
+    },
   });
+
+  const handleAccept = () => {
+    setResult(null);
+    setForm(initialForm);
+    setZonaInput("");
+  };
 
   const togglePortal = (portal: string) => {
     setForm((f) => ({
@@ -38,13 +84,18 @@ export default function SearchForm() {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: { preventDefault(): void }) => {
     e.preventDefault();
     setResult(null);
     searchMutation.mutate(form);
   };
 
   const isValid = form.zona && form.portales.length > 0;
+
+  const errorDetail = (() => {
+    const err = searchMutation.error as { response?: { data?: { detail?: string } } } | null;
+    return err?.response?.data?.detail ?? null;
+  })();
 
   return (
     <div className="mx-auto flex flex-col gap-6">
@@ -57,24 +108,46 @@ export default function SearchForm() {
 
       <form onSubmit={handleSubmit} className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col gap-5">
 
-        {/* Zona */}
+        {/* Zona — combobox */}
         <div className="flex flex-col gap-1.5">
           <label className="text-sm font-medium text-gray-700">
             Zona <span className="text-red-500">*</span>
           </label>
-          <input
-            list="zones-list"
-            required
-            placeholder="Escribe para buscar zona..."
-            className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={form.zona}
-            onChange={(e) => setForm((f) => ({ ...f, zona: e.target.value }))}
-          />
-          <datalist id="zones-list">
-            {zonesQuery.data?.map((z) => (
-              <option key={z.key} value={z.label} />
-            ))}
-          </datalist>
+          <div ref={comboRef} className="relative">
+            <input
+              type="text"
+              required
+              autoComplete="off"
+              placeholder="Escribe para filtrar zonas..."
+              className={`w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                zonaInput && !form.zona ? "border-yellow-400" : "border-gray-300"
+              }`}
+              value={zonaInput}
+              onChange={(e) => handleZonaInput(e.target.value)}
+              onFocus={() => setShowDropdown(true)}
+            />
+            {showDropdown && zonasSugeridas.length > 0 && (
+              <ul className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-56 overflow-y-auto">
+                {zonasSugeridas.map((z) => (
+                  <li
+                    key={z.key}
+                    onMouseDown={() => selectZona(z.label)}
+                    className="px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 cursor-pointer"
+                  >
+                    {z.label}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {showDropdown && zonaInput.trim() && zonasSugeridas.length === 0 && (
+              <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg px-3 py-2 text-sm text-gray-400">
+                No hay zonas que coincidan con "{zonaInput}"
+              </div>
+            )}
+          </div>
+          {zonaInput && !form.zona && (
+            <p className="text-xs text-yellow-700">Selecciona una zona de la lista.</p>
+          )}
         </div>
 
         {/* Precios */}
@@ -122,10 +195,8 @@ export default function SearchForm() {
             {portales.map((f) => {
               const available =
                 !form.zona ||
-                (zonesQuery.data
-                  ?.find((z) => z.label === form.zona)
-                  ?.portales_disponibles.includes(f.id) ??
-                true);
+                !zoneMatch ||
+                zoneMatch.portales_disponibles.includes(f.id);
               const selected = form.portales.includes(f.id);
               return (
                 <button
@@ -147,7 +218,7 @@ export default function SearchForm() {
               );
             })}
           </div>
-          {form.zona && (
+          {zoneMatch && (
             <p className="text-xs text-gray-400">
               Los portales en gris no están disponibles para esta zona.
             </p>
@@ -184,43 +255,53 @@ export default function SearchForm() {
         </button>
       </form>
 
-      {/* Resultado */}
       {searchMutation.isError && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-          Error al lanzar la búsqueda. Verifica que la zona tenga portales disponibles.
+          {errorDetail ?? "Error al lanzar la búsqueda."}
         </div>
       )}
 
-      {result && (
-        <div className="bg-green-50 border border-green-200 rounded-xl p-5">
-          <p className="font-medium text-green-800 mb-3">
-            Búsqueda lanzada — {result.targets} target{result.targets !== 1 ? "s" : ""} en cola
-          </p>
-          <p className="text-sm text-green-700 mb-2">
-            <span className="font-medium">Zona:</span> {result.zona}
-          </p>
-          <p className="text-sm text-green-700 mb-3">
-            <span className="font-medium">Portales:</span> {result.portales.join(", ")}
-          </p>
-          <div className="flex flex-col gap-1">
-            <p className="text-xs text-green-600 font-medium">URLs que se van a scrapear:</p>
-            {result.search_urls.map((url, i) => (
-              <a
-                key={i}
-                href={url}
-                target="_blank"
-                rel="noreferrer"
-                className="text-xs text-blue-600 hover:underline truncate"
+      <Modal
+        isOpen={result !== null}
+        onClose={handleAccept}
+        title="Búsqueda lanzada"
+        maxWidth="max-w-lg"
+      >
+        {result && (
+          <div className="flex flex-col gap-4">
+            <p className="text-sm text-gray-700">
+              <span className="font-medium">{result.targets} target{result.targets !== 1 ? "s" : ""}</span> en cola para scraping.
+            </p>
+            <div className="flex flex-col gap-1 text-sm text-gray-700">
+              <p><span className="font-medium">Zona:</span> {result.zona}</p>
+              <p><span className="font-medium">Portales:</span> {result.portales.join(", ")}</p>
+            </div>
+            <div className="flex flex-col gap-1">
+              <p className="text-xs font-medium text-gray-500">URLs que se van a scrapear:</p>
+              {result.search_urls.map((url, i) => (
+                <a
+                  key={i}
+                  href={url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-xs text-blue-600 hover:underline truncate"
+                >
+                  {url}
+                </a>
+              ))}
+            </div>
+            <p className="text-xs text-gray-400">Los resultados aparecerán en el Dashboard en unos minutos.</p>
+            <div className="flex justify-end pt-1">
+              <button
+                onClick={handleAccept}
+                className="px-5 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
               >
-                {url}
-              </a>
-            ))}
+                Aceptar
+              </button>
+            </div>
           </div>
-          <p className="text-xs text-green-600 mt-3">
-            Los resultados aparecerán en el Dashboard en unos minutos.
-          </p>
-        </div>
-      )}
+        )}
+      </Modal>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import {
   fetchReport, fetchReportHtmlBlob, downloadReportPdf, publishReportToTelegram
@@ -9,6 +9,8 @@ import type { Report } from "../types";
 export default function InformeDetalle() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const backTo = (location.state as { from?: string } | null)?.from ?? "/informes";
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [published, setPublished] = useState(false);
@@ -54,10 +56,10 @@ export default function InformeDetalle() {
     <div className="flex flex-col gap-5">
       {/* Back nav */}
       <button
-        onClick={() => navigate("/informes")}
-        className="self-start flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors"
+        onClick={() => navigate(backTo)}
+        className="self-start flex items-center gap-1.5 text-sm text-gray-600 bg-white border border-gray-300 rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors shadow-sm"
       >
-        ← Volver a Informes
+        ← Volver
       </button>
 
       {/* Header */}
@@ -114,12 +116,17 @@ export default function InformeDetalle() {
 
       {/* HTML Preview */}
       {blobUrl ? (
-        <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+        <div className="bg-[#d8d5d0] border border-gray-300 rounded-xl shadow-sm overflow-hidden flex justify-center py-8">
           <iframe
             src={blobUrl}
             title="Informe de análisis"
-            className="w-full"
-            style={{ height: "calc(297mm * 2 + 40px)", border: "none" }}
+            style={{ width: "210mm", height: "calc(297mm * 2 + 40px)", border: "none", display: "block", boxShadow: "0 4px 24px rgba(0,0,0,0.18)", borderRadius: "4px" }}
+            onLoad={(e) => {
+              try {
+                const body = e.currentTarget.contentDocument?.body;
+                if (body) e.currentTarget.style.height = body.scrollHeight + "px";
+              } catch {}
+            }}
           />
         </div>
       ) : previewError ? (

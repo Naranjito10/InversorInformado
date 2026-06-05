@@ -19,15 +19,23 @@ body {
   color: #1a1a1a;
   background: #f0ede8;
   width: 210mm;
-  min-height: 297mm;
+  margin: 0 auto;
 }
 
 .page {
   width: 210mm;
-  min-height: 297mm;
   background: #f0ede8;
   padding: 10mm 12mm;
   page-break-after: always;
+}
+
+@media screen {
+  body { overflow: hidden; }
+}
+
+@media print {
+  body { min-height: 297mm; }
+  .page { min-height: 297mm; }
 }
 
 .page:last-child {

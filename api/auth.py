@@ -48,3 +48,14 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     return sub
+
+
+def get_user_by_email(email: str) -> dict | None:
+    from scraper.infrastructure.db import get_client
+    client = get_client()
+    if client is None:
+        return None
+    res = client.table("users").select("id,email,password_hash").eq("email", email).limit(1).execute()
+    if res.data:
+        return res.data[0]
+    return None

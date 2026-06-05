@@ -10,16 +10,7 @@ ZONES_FILE = Path(__file__).parent.parent.parent / "config" / "zones.json"
 
 @lru_cache(maxsize=1)
 def load_zones() -> dict:
-    return json.loads(ZONES_FILE.read_text(encoding="utf-8"))["zones"]
-
-
-def get_zones_list() -> list[dict]:
-    zones = load_zones()
-    result = []
-    for key, zone in zones.items():
-        disponibles = [p for p, url in zone["portals"].items() if url]
-        result.append({"key": key, "label": zone["label"], "portales_disponibles": disponibles})
-    return sorted(result, key=lambda z: z["label"])
+    return json.loads(ZONES_FILE.read_text(encoding="utf-8-sig"))["zones"]
 
 
 def build_search_targets(
@@ -83,9 +74,24 @@ def _build_url(portal: str, base: str, price_min: Optional[int], price_max: Opti
 
 def run_cycle_background() -> None:
     from scraper.runner import run_cycle
-    run_cycle()
+    from scraper import state as scraper_state
+    scraper_state.set_running(message="Iniciando ciclo completo...")
+    try:
+        stats = run_cycle()
+        scraper_state.set_done(new=stats.total_new, updated=stats.total_updated, errors=stats.total_errors)
+    except Exception:
+        scraper_state.set_done()
+        raise
 
 
 def run_targets_background(targets: list[dict]) -> None:
     from scraper.runner import run_targets
-    run_targets(targets)
+    from scraper import state as scraper_state
+    portales = ", ".join(sorted({t["source"] for t in targets}))
+    scraper_state.set_running(message=f"Iniciando búsqueda en {portales}...")
+    try:
+        stats = run_targets(targets)
+        scraper_state.set_done(new=stats.total_new, updated=stats.total_updated, errors=stats.total_errors)
+    except Exception:
+        scraper_state.set_done()
+        raise
