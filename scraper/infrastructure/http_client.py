@@ -138,20 +138,26 @@ def _fetch_js(url: str, proxy: Optional[str], timeout: int) -> str:
     """Chromium headless via StealthySession (sesion persistente)."""
     if not _HAS_SCRAPLING:
         raise FetchError("scrapling no instalado: pip install 'scrapling[all]'")
-    try:
-        log.info("stealth_fetch", extra={"url": url})
-        session = _get_stealth_session()
-        kwargs: dict = {}
-        if proxy:
-            kwargs["proxy"] = proxy
-        page = session.fetch(url, **kwargs)
-        if page is None:
-            raise FetchError(f"StealthySession devolvio respuesta vacia: {url}")
-        return page.html_content
-    except FetchError:
-        raise
-    except Exception as exc:
-        raise FetchError(f"StealthySession error [{url}]: {exc}") from exc
+    for attempt in range(2):
+        try:
+            log.info("stealth_fetch", extra={"url": url})
+            session = _get_stealth_session()
+            kwargs: dict = {}
+            if proxy:
+                kwargs["proxy"] = proxy
+            page = session.fetch(url, **kwargs)
+            if page is None:
+                raise FetchError(f"StealthySession devolvio respuesta vacia: {url}")
+            return page.html_content
+        except FetchError:
+            raise
+        except Exception as exc:
+            if attempt == 0 and "thread" in str(exc).lower():
+                log.warning("stealth_session_dead_reconnecting", extra={"url": url})
+                _close_stealth_session()
+                continue
+            raise FetchError(f"StealthySession error [{url}]: {exc}") from exc
+    raise FetchError(f"StealthySession: no se pudo reconectar [{url}]")
 
 
 def _fetch_http(url: str, proxy: Optional[str], timeout: int) -> str:

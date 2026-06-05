@@ -68,6 +68,9 @@ class FotocasaScraper(BaseScraper):
         path = detail.get("es-ES") or detail.get("es")
         item["url"] = urljoin(self.BASE, path) if path else None
 
+        # Título
+        item["titulo"] = raw.get("title") or raw.get("name") or raw.get("prettyName")
+
         # Precio
         item["precio_venta"] = raw.get("rawPrice") or raw.get("price")
 
@@ -100,6 +103,12 @@ class FotocasaScraper(BaseScraper):
         coords = raw.get("coordinates") or {}
         item["lat"] = coords.get("latitude")
         item["lon"] = coords.get("longitude")
+
+        # Fallback titulo si el JSON no lo trae
+        if not item.get("titulo"):
+            parts = [item.get("barrio"), item.get("municipio")]
+            loc = ", ".join(p for p in parts if p)
+            item["titulo"] = f"Vivienda en {loc}" if loc else None
 
         return item
 

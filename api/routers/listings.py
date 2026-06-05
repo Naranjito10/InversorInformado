@@ -21,11 +21,14 @@ def get_listings(
     precio_max: Optional[int] = Query(None),
     solo_activos: bool = Query(True),
     limit: int = Query(200, le=500),
+    q: Optional[str] = Query(None),
 ):
     filters: dict = {"activo": solo_activos}
-    if municipio:
+    if q:
+        filters["q"] = q
+    elif municipio:
         filters["municipio"] = municipio
-    if barrio:
+    if barrio and not q:
         filters["barrio"] = barrio
     if fuente:
         filters["fuente"] = fuente
@@ -84,3 +87,8 @@ def keep_new_listing(listing_id: str):
 @router.get("/stats", response_model=StatsOut)
 def get_stats():
     return listings_service.get_stats()
+
+
+@router.get("/zonas")
+def get_zonas():
+    return listings_service.get_zonas()

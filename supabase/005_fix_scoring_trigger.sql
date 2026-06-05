@@ -1,6 +1,8 @@
 -- =========================================================================
--- 003_scoring_function.sql
--- Funcion que recalcula score y score_label segun los pesos del prompt
+-- 005_fix_scoring_trigger.sql
+-- Corrige el trigger de scoring para usar la columna "condition" (no "estado")
+-- y los valores del enum Python: buen_estado, reforma_integral, etc.
+-- Ejecutar en Supabase SQL Editor.
 -- =========================================================================
 
 create or replace function public.calcular_score(l public.listings)
@@ -8,7 +10,6 @@ returns table(score int, score_label text) as $$
 declare
     s int := 0;
     lbl text := 'normal';
-    campos_null int := 0;
 begin
     -- ----- RENTABILIDAD (0-40) -----
     if l.rentabilidad_bruta is not null then
@@ -39,8 +40,8 @@ begin
     if l.garaje   is true then s := s + 4; end if;
 
     -- ----- SEÑALES DE URGENCIA (0-15) -----
-    if l.bajada_precio is true              then s := s + 10; end if;
-    if coalesce(l.dias_en_mercado, 0) > 60  then s := s + 5; end if;
+    if l.bajada_precio is true             then s := s + 10; end if;
+    if coalesce(l.dias_en_mercado, 0) > 60 then s := s + 5;  end if;
 
     -- ----- PENALIZACIONES -----
     if coalesce(l.campos_vacios, 0) > 5 then
@@ -51,8 +52,7 @@ begin
     end if;
 
     -- Acotar [0, 100]
-    if s < 0   then s := 0;   end if;
-    if s > 100 then s := 100; end if;
+    s := greatest(0, least(s, 100));
 
     -- ----- CLASIFICACION -----
     if s >= 80 then
@@ -73,7 +73,6 @@ end;
 $$ language plpgsql immutable;
 
 
--- Trigger que aplica el scoring antes de INSERT/UPDATE
 create or replace function public.aplicar_score()
 returns trigger as $$
 declare
@@ -81,7 +80,6 @@ declare
     null_count int := 0;
 begin
     -- Contar campos clave nulos para campos_vacios
-    null_count := 0;
     if new.precio_venta           is null then null_count := null_count + 1; end if;
     if new.metros_cuadrados       is null then null_count := null_count + 1; end if;
     if new.habitaciones           is null then null_count := null_count + 1; end if;
@@ -148,55 +146,9 @@ begin
 end;
 $$ language plpgsql;
 
--- Nota: el nombre empieza por trg_z_ para que PostgreSQL lo dispare DESPUÉS
--- de trg_price_change (los BEFORE triggers se ordenan alfabéticamente).
--- Así, bajada_precio ya está actualizado cuando calculamos el score.
-drop trigger if exists trg_aplicar_score on public.listings;   -- limpiar nombre anterior
+drop trigger if exists trg_aplicar_score on public.listings;
 drop trigger if exists trg_z_aplicar_score on public.listings;
 create trigger trg_z_aplicar_score
     before insert or update on public.listings
     for each row
     execute function public.aplicar_score();
-
-
--- ====== Vistas convenientes para queries habituales ======
-
-create or replace view public.v_top_rentabilidad as
-select id, url, fuente, titulo, barrio, municipio,
-       precio_venta, precio_m2, metros_cuadrados,
-       alquiler_estimado, rentabilidad_bruta, rentabilidad_alquiler,
-       score, score_label, primera_deteccion
-from public.listings
-where activo = true
-  and rentabilidad_bruta is not null
-order by rentabilidad_bruta desc;
-
-create or replace view public.v_bajadas_recientes as
-select l.*
-from public.listings l
-where l.activo = true
-  and l.bajada_precio = true
-  and l.ultima_actualizacion >= now() - interval '7 days'
-order by l.ultima_actualizacion desc;
-
-create or replace view public.v_oportunidades_alto as
-select id, url, fuente, titulo, barrio, municipio,
-       precio_venta, precio_m2, metros_cuadrados, habitaciones,
-       rentabilidad_bruta, descuento_zona_pct,
-       score, score_label, bajada_precio,
-       primera_deteccion, dias_en_mercado
-from public.listings
-where activo = true
-  and score_label = 'alto'
-order by score desc, primera_deteccion desc;
-
-create or replace view public.v_precio_medio_barrio as
-select barrio, municipio,
-       count(*)               as total,
-       round(avg(precio_m2))  as precio_medio_m2,
-       round(avg(precio_venta)) as precio_medio_venta,
-       round(avg(rentabilidad_bruta)::numeric, 2) as rentabilidad_media
-from public.listings
-where activo = true and barrio is not null
-group by barrio, municipio
-order by precio_medio_m2 desc;

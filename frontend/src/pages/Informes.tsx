@@ -72,7 +72,7 @@ export default function Informes() {
                 <tr
                   key={r.id}
                   className="hover:bg-gray-50 cursor-pointer"
-                  onClick={() => navigate(`/informes/${r.id}`)}
+                  onClick={() => navigate(`/informes/${r.id}`, { state: { from: "/informes" } })}
                 >
                   <td className="px-4 py-3 font-medium text-gray-900">{r.title}</td>
                   <td className="px-4 py-3 text-gray-500">

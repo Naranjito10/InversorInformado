@@ -28,7 +28,7 @@ create table if not exists public.listings (
     ascensor                  boolean,
     terraza                   boolean,
     garaje                    boolean,
-    estado                    text,                      -- nuevo / buen estado / a reformar
+    condition                 text,                      -- obra_nueva / listo_para_usar / buen_estado / reforma_leve / reforma_integral / reforma_estructural
     certificado_energetico    text,                      -- A..G
 
     -- Localizacion
