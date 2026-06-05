@@ -14,6 +14,7 @@ _state: dict = {
     "new": 0,
     "updated": 0,
     "errors": 0,
+    "queued": 0,
     "started_at": None,
     "finished_at": None,
 }
@@ -34,8 +35,14 @@ def set_running(portal: str | None = None, message: str = "Iniciando búsqueda..
         _state["new"] = 0
         _state["updated"] = 0
         _state["errors"] = 0
+        _state["queued"] = max(0, _state["queued"] - 1)
         _state["started_at"] = datetime.now(timezone.utc).isoformat()
         _state["finished_at"] = None
+
+
+def inc_queued() -> None:
+    with _lock:
+        _state["queued"] += 1
 
 
 def update(event: str, message: str, portal: str | None = None) -> None:
@@ -78,3 +85,4 @@ def dismiss() -> None:
         _state["done"] = False
         _state["event"] = None
         _state["message"] = None
+        _state["queued"] = 0

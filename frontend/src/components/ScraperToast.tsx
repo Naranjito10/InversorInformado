@@ -65,7 +65,7 @@ export default function ScraperToast() {
 
   return (
     <div
-      className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-4 duration-300"
+      className="fixed bottom-6 right-6 z-50 flex flex-col gap-2 items-end"
       style={{ animation: "slideUp 0.3s ease-out" }}
     >
       <style>{`
@@ -74,6 +74,23 @@ export default function ScraperToast() {
           to   { transform: translateY(0);    opacity: 1; }
         }
       `}</style>
+
+      {/* Toast de cola — aparece encima del principal cuando hay búsquedas esperando */}
+      {status.queued > 0 && (
+        <div className="bg-white border border-blue-200 rounded-2xl shadow-md w-72 overflow-hidden">
+          <div className="flex items-center gap-2.5 px-4 py-3">
+            <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 shrink-0">
+              <svg className="h-3.5 w-3.5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h7" />
+              </svg>
+            </div>
+            <p className="text-sm text-gray-700">
+              <span className="font-semibold text-blue-700">{status.queued}</span>
+              {" "}búsqueda{status.queued !== 1 ? "s" : ""} en cola
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="bg-white border border-green-200 rounded-2xl shadow-xl w-72 overflow-hidden">
         {/* Header */}
