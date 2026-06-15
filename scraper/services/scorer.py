@@ -45,7 +45,7 @@ def calcular_score(v: Union[Listing, dict]) -> Tuple[int, str]:
             score += 8
 
     # ESTADO Y EXTRAS (0-20)
-    if d.get("estado") == "buen estado":
+    if d.get("condition") in ("buen_estado", "listo_para_usar"):
         score += 8
     if d.get("ascensor") is True:
         score += 4
@@ -63,7 +63,7 @@ def calcular_score(v: Union[Listing, dict]) -> Tuple[int, str]:
     # PENALIZACIONES
     if (d.get("campos_vacios") or 0) > 5:
         score = min(score, 40)
-    if d.get("estado") == "a reformar":
+    if d.get("condition") in ("reforma_leve", "reforma_integral", "reforma_estructural"):
         score -= 5
 
     # Acotar
@@ -90,7 +90,7 @@ def contar_campos_vacios(v: Union[Listing, dict]) -> int:
         d = v
     claves = [
         "precio_venta", "metros_cuadrados", "habitaciones", "banos",
-        "estado", "barrio", "municipio", "precio_m2",
+        "condition", "barrio", "municipio", "precio_m2",
         "certificado_energetico", "planta",
     ]
     return sum(1 for k in claves if d.get(k) is None)

@@ -34,7 +34,7 @@ export default function InformeNuevo() {
 
   const { data: listings = [] } = useQuery<Listing[]>({
     queryKey: ["listings-search", search],
-    queryFn: () => fetchListings({ limit: 20, ...(search ? { municipio: search } : {}) }),
+    queryFn: () => fetchListings({ limit: 20, ...(search ? { q: search } : {}) }),
     staleTime: 30_000,
   });
 
@@ -50,7 +50,7 @@ export default function InformeNuevo() {
           metros: selectedListing.metros_cuadrados ?? 0,
           habitaciones: selectedListing.habitaciones ?? 0,
           banos: selectedListing.banos ?? 0,
-          estado: selectedListing.estado ?? "",
+          condition: selectedListing.condition ?? "",
           url: selectedListing.url,
           cee: selectedListing.cee ?? undefined,
         },
@@ -63,7 +63,7 @@ export default function InformeNuevo() {
       const title = `${data.property.barrio || data.property.municipio} · ${new Date().toLocaleDateString("es-ES")}`;
       return createReport({ title, property_id: selectedListing.id, data });
     },
-    onSuccess: (report) => navigate(`/informes/${report.id}`),
+    onSuccess: (report) => navigate(`/informes/${report.id}`, { state: { from: "/informes" } }),
   });
 
   const handleAiEstimate = async () => {
@@ -76,7 +76,7 @@ export default function InformeNuevo() {
         precio: selectedListing.precio_venta ?? 0,
         metros: selectedListing.metros_cuadrados ?? 0,
         habitaciones: selectedListing.habitaciones ?? 0,
-        estado: selectedListing.estado ?? "",
+        condition: selectedListing.condition ?? "",
       });
       setMarket({ ...est, ai_estimated: true });
       if ((est as { verdict?: string }).verdict && !verdict) {
@@ -94,7 +94,7 @@ export default function InformeNuevo() {
     setMarket((m) => ({ ...m, [k]: v }));
 
   return (
-    <div className="flex flex-col gap-6 max-w-3xl">
+    <div className="flex flex-col gap-6">
       <button
         onClick={() => navigate("/informes")}
         className="self-start flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors"
@@ -119,7 +119,7 @@ export default function InformeNuevo() {
           onChange={(e) => setSearch(e.target.value)}
           className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
-        {listings.length > 0 && !selectedListing && (
+        {listings.length > 0 && search && (
           <div className="border border-gray-200 rounded-lg overflow-hidden max-h-52 overflow-y-auto">
             {listings.map((l) => (
               <button
@@ -180,25 +180,25 @@ export default function InformeNuevo() {
             </div>
             <div className="flex flex-wrap gap-2 text-xs">
               {selectedListing.barrio && (
-                <span className="bg-white border border-blue-100 text-gray-600 px-2 py-1 rounded-full">📍 {selectedListing.barrio}, {selectedListing.municipio}</span>
+                <span className="bg-white border border-blue-100 text-gray-600 px-2 py-1 rounded-full">{selectedListing.barrio}, {selectedListing.municipio}</span>
               )}
-              {selectedListing.estado && (
-                <span className="bg-white border border-blue-100 text-gray-600 px-2 py-1 rounded-full">🏠 {selectedListing.estado}</span>
+              {selectedListing.condition && (
+                <span className="bg-white border border-blue-100 text-gray-600 px-2 py-1 rounded-full">{selectedListing.condition}</span>
               )}
               {selectedListing.planta && (
-                <span className="bg-white border border-blue-100 text-gray-600 px-2 py-1 rounded-full">🔢 Planta {selectedListing.planta}</span>
+                <span className="bg-white border border-blue-100 text-gray-600 px-2 py-1 rounded-full">Planta {selectedListing.planta}</span>
               )}
               {selectedListing.ascensor && (
-                <span className="bg-white border border-blue-100 text-gray-600 px-2 py-1 rounded-full">🛗 Ascensor</span>
+                <span className="bg-white border border-blue-100 text-gray-600 px-2 py-1 rounded-full">Ascensor</span>
               )}
               {selectedListing.terraza && (
-                <span className="bg-white border border-blue-100 text-gray-600 px-2 py-1 rounded-full">🌿 Terraza</span>
+                <span className="bg-white border border-blue-100 text-gray-600 px-2 py-1 rounded-full">Terraza</span>
               )}
               {selectedListing.garaje && (
-                <span className="bg-white border border-blue-100 text-gray-600 px-2 py-1 rounded-full">🚗 Garaje</span>
+                <span className="bg-white border border-blue-100 text-gray-600 px-2 py-1 rounded-full">Garaje</span>
               )}
               {selectedListing.cee && (
-                <span className="bg-white border border-blue-100 text-gray-600 px-2 py-1 rounded-full">⚡ CEE {selectedListing.cee}</span>
+                <span className="bg-white border border-blue-100 text-gray-600 px-2 py-1 rounded-full">CEE {selectedListing.cee}</span>
               )}
             </div>
           </div>
@@ -304,7 +304,7 @@ export default function InformeNuevo() {
         <button
           onClick={() => saveMutation.mutate()}
           disabled={saveMutation.isPending}
-          className="self-start bg-blue-600 text-white font-medium text-sm px-6 py-2.5 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+          className="w-full bg-blue-600 text-white font-medium text-sm px-6 py-2.5 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
         >
           {saveMutation.isPending ? "Guardando..." : "Guardar informe"}
         </button>

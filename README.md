@@ -228,6 +228,11 @@ InversorInformado/
 ├── config/
 │   ├── search_targets.json       # URLs de búsqueda automática
 │   └── zones.json                # Zonas disponibles por portal (~80 zonas)
+├── docs/
+│   └── templates/                # Mockups HTML de referencia visual de informes
+│       ├── informe_inversion_piso.html
+│       ├── informe_zona_inmobiliario.html
+│       └── property_investment_marketplace.html
 ├── supabase/                     # Migraciones SQL
 ├── tests/                        # pytest: scorer, normalizer, http_client
 ├── .env                          # Variables de entorno (no en git)

@@ -45,7 +45,7 @@ FIELDS = [
     ("ascensor",             "Ascensor"),
     ("terraza",              "Terraza"),
     ("garaje",               "Garaje"),
-    ("estado",               "Estado"),
+    ("condition",            "Estado"),
     ("certificado_energetico", "CEE"),
     ("alquiler_estimado",    "Alquiler (€/mes)"),
     ("rentabilidad_bruta",   "Rent. Bruta (%)"),
@@ -60,7 +60,7 @@ FIELDS = [
     ("veces_visto",          "Veces visto"),
     ("primera_deteccion",    "Detectado"),
     ("ultima_actualizacion", "Actualizado"),
-    ("activo",               "Activo"),
+    ("status",               "Estado BD"),
     ("url",                  "URL"),
 ]
 

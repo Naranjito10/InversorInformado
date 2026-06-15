@@ -27,7 +27,7 @@ class AIEstimateRequest(BaseModel):
     precio: int
     metros: int
     habitaciones: int
-    estado: str
+    condition: Optional[str] = None
 
 
 @router.get("")

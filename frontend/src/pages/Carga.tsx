@@ -15,7 +15,8 @@ import type { BulkImportResult, ManualListingIn } from "../services/api";
 const CSV_HEADERS = [
   "url", "fuente", "titulo", "precio_venta", "metros_cuadrados",
   "habitaciones", "banos", "municipio", "barrio", "provincia",
-  "estado", "ascensor", "terraza", "garaje", "certificado_energetico",
+  "condition", "ocupacion", "situacion_legal",
+  "ascensor", "terraza", "garaje", "certificado_energetico",
   "alquiler_estimado", "precio_zona_m2",
 ];
 
@@ -23,7 +24,8 @@ const HEADER_LABELS: Record<string, string> = {
   url: "URL", fuente: "Fuente", titulo: "Título",
   precio_venta: "Precio (€)", metros_cuadrados: "M²",
   habitaciones: "Hab.", banos: "Baños", municipio: "Municipio",
-  barrio: "Barrio", provincia: "Provincia", estado: "Estado",
+  barrio: "Barrio", provincia: "Provincia",
+  condition: "Condición", ocupacion: "Ocupación", situacion_legal: "Situación legal",
   ascensor: "Ascensor", terraza: "Terraza", garaje: "Garaje",
   certificado_energetico: "CEE", alquiler_estimado: "Alquiler est.",
   precio_zona_m2: "Precio zona/m²",
@@ -82,7 +84,7 @@ function downloadTemplate() {
   const example = [
     "https://www.idealista.com/inmueble/12345/",
     "idealista", "Piso en el centro", "250000", "80", "3", "2",
-    "Barcelona", "Eixample", "Barcelona", "buen estado",
+    "Barcelona", "Eixample", "Barcelona", "buen_estado", "libre", "libre_cargas",
     "true", "false", "false", "C", "1200", "3500",
   ];
   const csv = CSV_HEADERS.join(",") + "\n" + example.join(",") + "\n";
@@ -109,7 +111,33 @@ interface PreviewRow {
 // Manual form
 // ---------------------------------------------------------------------------
 
-const ESTADOS = ["nuevo", "buen estado", "Ocupado", "Alquilado", "Mal estado", "Reforma Crítica", "Reforma Menor / A Reformar", "Nuda Propiedad"];
+const CONDITIONS: [string, string][] = [
+  ["obra_nueva", "Nuevo"],
+  ["listo_para_usar", "Listo para usar"],
+  ["buen_estado", "Usado pero bien"],
+  ["reforma_leve", "Reforma leve necesaria"],
+  ["reforma_integral", "Reforma Integral / A reformar"],
+  ["reforma_estructural", "Reforma estructural necesaria"],
+];
+
+const OCUPACION_OPTIONS: [string, string][] = [
+  ["libre", "Libre / Desocupado"],
+  ["ocupado", "Ocupado"],
+  ["alquilado", "Alquilado"],
+  ["nuda_propiedad", "Nuda propiedad"],
+];
+
+const SITUACION_LEGAL_OPTIONS: [string, string][] = [
+  ["libre_cargas", "Libre de cargas"],
+  ["con_hipoteca", "Con hipoteca"],
+  ["en_construccion", "En construcción"],
+  ["renta_antigua", "Renta antigua"],
+  ["vpo", "VPO / Protección oficial"],
+  ["subasta", "En subasta"],
+  ["litigio", "En litigio"],
+  ["herencia", "Herencia / En trámite"],
+];
+
 const CEE = ["A", "B", "C", "D", "E", "F", "G"];
 
 const emptyForm = (): ManualListingIn => ({ url: "", fuente: "" });
@@ -224,19 +252,45 @@ function ManualForm() {
         ))}
       </div>
 
-      {/* Características */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {/* Clasificación */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium text-gray-700">Estado</label>
+          <label className="text-sm font-medium text-gray-700">Condición</label>
           <select
-            value={form.estado ?? ""}
-            onChange={(e) => set("estado", e.target.value)}
-            className="capitalize border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={form.condition ?? ""}
+            onChange={(e) => set("condition", e.target.value)}
+            className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">— sin especificar —</option>
-            {ESTADOS.map((s) => <option key={s} value={s}>{s}</option>)}
+            {CONDITIONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
           </select>
         </div>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium text-gray-700">Ocupación</label>
+          <select
+            value={form.ocupacion ?? ""}
+            onChange={(e) => set("ocupacion", e.target.value)}
+            className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">— sin especificar —</option>
+            {OCUPACION_OPTIONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+          </select>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium text-gray-700">Situación legal</label>
+          <select
+            value={form.situacion_legal ?? ""}
+            onChange={(e) => set("situacion_legal", e.target.value)}
+            className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">— sin especificar —</option>
+            {SITUACION_LEGAL_OPTIONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+          </select>
+        </div>
+      </div>
+
+      {/* Características */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         <div className="flex flex-col gap-1.5">
           <label className="text-sm font-medium text-gray-700">CEE</label>
           <select
@@ -268,9 +322,20 @@ function ManualForm() {
         </div>
       </div>
 
-      {/* Booleanos */}
-      <div className="flex gap-6">
-        {(["ascensor", "terraza", "garaje"] as (keyof ManualListingIn)[]).map((k) => (
+      {/* Características del edificio */}
+      <div className="flex flex-wrap gap-5">
+        {(
+          [
+            ["ascensor", "Ascensor"],
+            ["terraza", "Terraza"],
+            ["garaje", "Garaje"],
+            ["exterior", "Exterior"],
+            ["portero", "Portero"],
+            ["puerta_blindada", "Puerta blindada"],
+            ["doble_acristalamiento", "Doble acristalamiento"],
+            ["adaptado_movilidad", "Adaptado movilidad"],
+          ] as [keyof ManualListingIn, string][]
+        ).map(([k, label]) => (
           <label key={k} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
             <input
               type="checkbox"
@@ -278,9 +343,64 @@ function ManualForm() {
               onChange={(e) => set(k, e.target.checked ? true : undefined)}
               className="w-4 h-4 accent-blue-600"
             />
-            {k.charAt(0).toUpperCase() + k.slice(1)}
+            {label}
           </label>
         ))}
+      </div>
+
+      {/* Amenidades interiores */}
+      <div>
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Interior</p>
+        <div className="flex flex-wrap gap-5">
+          {(
+            [
+              ["balcon", "Balcón"],
+              ["trastero", "Trastero"],
+              ["armarios_empotrados", "Armarios empotrados"],
+              ["aire_acondicionado", "Aire acondicionado"],
+              ["calefaccion", "Calefacción"],
+              ["cocina_equipada", "Cocina equipada"],
+              ["amueblado", "Amueblado"],
+            ] as [keyof ManualListingIn, string][]
+          ).map(([k, label]) => (
+            <label key={k} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={Boolean(form[k])}
+                onChange={(e) => set(k, e.target.checked ? true : undefined)}
+                className="w-4 h-4 accent-blue-600"
+              />
+              {label}
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* Zonas comunitarias */}
+      <div>
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Zonas comunes</p>
+        <div className="flex flex-wrap gap-5">
+          {(
+            [
+              ["jardin", "Jardín"],
+              ["piscina", "Piscina privada"],
+              ["piscina_comunitaria", "Piscina comunitaria"],
+              ["zonas_verdes_comunitarias", "Zonas verdes"],
+              ["vigilancia", "Vigilancia"],
+              ["garaje_incluido", "Garaje incluido en precio"],
+            ] as [keyof ManualListingIn, string][]
+          ).map(([k, label]) => (
+            <label key={k} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={Boolean(form[k])}
+                onChange={(e) => set(k, e.target.checked ? true : undefined)}
+                className="w-4 h-4 accent-blue-600"
+              />
+              {label}
+            </label>
+          ))}
+        </div>
       </div>
 
       {result && (
@@ -336,7 +456,9 @@ const COLUMN_DOCS: {
   { key: "municipio",             tipo: "Texto",   req: false, desc: "Ciudad o municipio",                    valores: "Cualquier texto — ej: Barcelona" },
   { key: "barrio",                tipo: "Texto",   req: false, desc: "Barrio o distrito",                     valores: "Cualquier texto — ej: Eixample" },
   { key: "provincia",             tipo: "Texto",   req: false, desc: "Provincia",                             valores: "Cualquier texto — ej: Barcelona" },
-  { key: "estado",                tipo: "Texto",   req: false, desc: "Estado del inmueble",                   valores: "nuevo · buen estado · Ocupado · Alquilado · Mal estado · Reforma Crítica · Reforma Menor / A Reformar · Nuda Propiedad" },
+  { key: "condition",              tipo: "Texto",   req: false, desc: "Condición física del inmueble",          valores: "obra_nueva · listo_para_usar · buen_estado · reforma_leve · reforma_integral · reforma_estructural" },
+  { key: "ocupacion",              tipo: "Texto",   req: false, desc: "Quién ocupa el inmueble",                valores: "libre · ocupado · alquilado · nuda_propiedad" },
+  { key: "situacion_legal",        tipo: "Texto",   req: false, desc: "Situación legal / cargas del título",   valores: "libre_cargas · con_hipoteca · en_construccion · renta_antigua · vpo · subasta · litigio · herencia" },
   { key: "ascensor",              tipo: "Booleano",req: false, desc: "Dispone de ascensor",                   valores: "true / false / 1 / 0 / si / no" },
   { key: "terraza",               tipo: "Booleano",req: false, desc: "Dispone de terraza",                    valores: "true / false / 1 / 0 / si / no" },
   { key: "garaje",                tipo: "Booleano",req: false, desc: "Incluye garaje",                        valores: "true / false / 1 / 0 / si / no" },
@@ -517,8 +639,8 @@ function CsvImporter() {
             <div className="flex flex-col gap-1.5">
               <p className="font-semibold text-gray-800 text-xs uppercase tracking-wide">Ejemplo de fila válida</p>
               <pre className="text-xs bg-white border border-blue-100 rounded-lg px-4 py-3 overflow-x-auto text-gray-600 leading-relaxed whitespace-pre">
-{`url,fuente,titulo,precio_venta,metros_cuadrados,habitaciones,banos,municipio,barrio,estado,ascensor,terraza,garaje,certificado_energetico,alquiler_estimado
-https://www.idealista.com/inmueble/12345/,idealista,Piso en Eixample reformado,250000,80,3,2,Barcelona,Eixample,buen estado,true,false,false,C,1200`}
+{`url,fuente,titulo,precio_venta,metros_cuadrados,habitaciones,banos,municipio,barrio,condition,ocupacion,situacion_legal,ascensor,terraza,garaje,certificado_energetico,alquiler_estimado
+https://www.idealista.com/inmueble/12345/,idealista,Piso en Eixample reformado,250000,80,3,2,Barcelona,Eixample,buen_estado,libre,libre_cargas,true,false,false,C,1200`}
               </pre>
             </div>
 

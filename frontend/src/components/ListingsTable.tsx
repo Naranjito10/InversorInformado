@@ -22,10 +22,33 @@ const LABEL_STYLES: Record<string, string> = {
 const fmt = (n?: number) =>
   n != null ? n.toLocaleString("es-ES") + " €" : "—";
 
-const ESTADOS = [
-  "nuevo", "buen estado", "Ocupado", "Alquilado",
-  "Mal estado", "Reforma Crítica", "Reforma Menor / A Reformar", "Nuda Propiedad",
+const CONDITIONS: [string, string][] = [
+  ["obra_nueva", "Nuevo"],
+  ["listo_para_usar", "Listo para usar"],
+  ["buen_estado", "Usado pero bien"],
+  ["reforma_leve", "Reforma leve necesaria"],
+  ["reforma_integral", "Reforma Integral / A reformar"],
+  ["reforma_estructural", "Reforma estructural necesaria"],
 ];
+
+const OCUPACION_OPTIONS: [string, string][] = [
+  ["libre", "Libre / Desocupado"],
+  ["ocupado", "Ocupado"],
+  ["alquilado", "Alquilado"],
+  ["nuda_propiedad", "Nuda propiedad"],
+];
+
+const SITUACION_LEGAL_OPTIONS: [string, string][] = [
+  ["libre_cargas", "Libre de cargas"],
+  ["con_hipoteca", "Con hipoteca"],
+  ["en_construccion", "En construcción"],
+  ["renta_antigua", "Renta antigua"],
+  ["vpo", "VPO / Protección oficial"],
+  ["subasta", "En subasta"],
+  ["litigio", "En litigio"],
+  ["herencia", "Herencia / En trámite"],
+];
+
 const CEE_OPTIONS = ["A", "B", "C", "D", "E", "F", "G"];
 
 function listingToForm(l: Listing): ManualListingIn {
@@ -41,13 +64,34 @@ function listingToForm(l: Listing): ManualListingIn {
     municipio: l.municipio,
     barrio: l.barrio,
     provincia: l.provincia,
-    estado: l.estado,
+    condition: l.condition,
+    ocupacion: l.ocupacion,
+    situacion_legal: l.situacion_legal,
     ascensor: l.ascensor,
     terraza: l.terraza,
     garaje: l.garaje,
     certificado_energetico: l.cee,
     alquiler_estimado: l.alquiler_estimado,
     precio_zona_m2: l.precio_zona_m2,
+    balcon: l.balcon,
+    trastero: l.trastero,
+    armarios_empotrados: l.armarios_empotrados,
+    aire_acondicionado: l.aire_acondicionado,
+    calefaccion: l.calefaccion,
+    cocina_equipada: l.cocina_equipada,
+    amueblado: l.amueblado,
+    exterior: l.exterior,
+    portero: l.portero,
+    puerta_blindada: l.puerta_blindada,
+    doble_acristalamiento: l.doble_acristalamiento,
+    adaptado_movilidad: l.adaptado_movilidad,
+    jardin: l.jardin,
+    piscina: l.piscina,
+    piscina_comunitaria: l.piscina_comunitaria,
+    zonas_verdes_comunitarias: l.zonas_verdes_comunitarias,
+    vigilancia: l.vigilancia,
+    garaje_incluido: l.garaje_incluido,
+    num_plazas_garaje: l.num_plazas_garaje,
   };
 }
 
@@ -242,18 +286,44 @@ function ListingDrawer({ listing, onClose }: DrawerProps) {
               ))}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            {/* Clasificación */}
+            <div className="grid grid-cols-1 gap-3">
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-gray-700">Estado</label>
+                <label className="text-sm font-medium text-gray-700">Condición</label>
                 <select
-                  value={form.estado ?? ""}
-                  onChange={(e) => set("estado", e.target.value)}
+                  value={form.condition ?? ""}
+                  onChange={(e) => set("condition", e.target.value)}
                   className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">— sin especificar —</option>
-                  {ESTADOS.map((s) => <option key={s} value={s}>{s}</option>)}
+                  {CONDITIONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                 </select>
               </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-gray-700">Ocupación</label>
+                <select
+                  value={form.ocupacion ?? ""}
+                  onChange={(e) => set("ocupacion", e.target.value)}
+                  className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">— sin especificar —</option>
+                  {OCUPACION_OPTIONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                </select>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-gray-700">Situación legal</label>
+                <select
+                  value={form.situacion_legal ?? ""}
+                  onChange={(e) => set("situacion_legal", e.target.value)}
+                  className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">— sin especificar —</option>
+                  {SITUACION_LEGAL_OPTIONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium text-gray-700">CEE</label>
                 <select
@@ -289,8 +359,16 @@ function ListingDrawer({ listing, onClose }: DrawerProps) {
               </div>
             </div>
 
-            <div className="flex gap-6">
-              {(["ascensor", "terraza", "garaje"] as (keyof ManualListingIn)[]).map((k) => (
+            {/* Características del edificio */}
+            <div className="flex flex-wrap gap-4">
+              {(
+                [
+                  ["ascensor", "Ascensor"], ["terraza", "Terraza"], ["garaje", "Garaje"],
+                  ["exterior", "Exterior"], ["portero", "Portero"],
+                  ["puerta_blindada", "Puerta blindada"], ["doble_acristalamiento", "Doble acristalamiento"],
+                  ["adaptado_movilidad", "Adaptado movilidad"],
+                ] as [keyof ManualListingIn, string][]
+              ).map(([k, label]) => (
                 <label key={k} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
                   <input
                     type="checkbox"
@@ -298,9 +376,61 @@ function ListingDrawer({ listing, onClose }: DrawerProps) {
                     onChange={(e) => set(k, e.target.checked ? true : undefined)}
                     className="w-4 h-4 accent-blue-600"
                   />
-                  {k.charAt(0).toUpperCase() + k.slice(1)}
+                  {label}
                 </label>
               ))}
+            </div>
+
+            {/* Amenidades interiores */}
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Interior</p>
+              <div className="flex flex-wrap gap-4">
+                {(
+                  [
+                    ["balcon", "Balcón"], ["trastero", "Trastero"],
+                    ["armarios_empotrados", "Armarios empotrados"],
+                    ["aire_acondicionado", "Aire acondicionado"],
+                    ["calefaccion", "Calefacción"], ["cocina_equipada", "Cocina equipada"],
+                    ["amueblado", "Amueblado"],
+                  ] as [keyof ManualListingIn, string][]
+                ).map(([k, label]) => (
+                  <label key={k} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(form[k])}
+                      onChange={(e) => set(k, e.target.checked ? true : undefined)}
+                      className="w-4 h-4 accent-blue-600"
+                    />
+                    {label}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Zonas comunes */}
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Zonas comunes</p>
+              <div className="flex flex-wrap gap-4">
+                {(
+                  [
+                    ["jardin", "Jardín"], ["piscina", "Piscina privada"],
+                    ["piscina_comunitaria", "Piscina comunitaria"],
+                    ["zonas_verdes_comunitarias", "Zonas verdes"],
+                    ["vigilancia", "Vigilancia"],
+                    ["garaje_incluido", "Garaje incluido en precio"],
+                  ] as [keyof ManualListingIn, string][]
+                ).map(([k, label]) => (
+                  <label key={k} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(form[k])}
+                      onChange={(e) => set(k, e.target.checked ? true : undefined)}
+                      className="w-4 h-4 accent-blue-600"
+                    />
+                    {label}
+                  </label>
+                ))}
+              </div>
             </div>
 
             <div className="grid grid-cols-3 gap-3 p-4 bg-gray-50 rounded-xl border border-gray-100 text-sm">
@@ -426,6 +556,7 @@ export default function ListingsTable({ listings, isLoading }: Props) {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
               <tr>
+                <th className="px-4 py-3 text-left">Acciones</th>
                 <th className="px-4 py-3 text-left">Score</th>
                 <th className="px-4 py-3 text-left">Portal</th>
                 <th className="px-4 py-3 text-left">Título</th>
@@ -434,8 +565,8 @@ export default function ListingsTable({ listings, isLoading }: Props) {
                 <th className="px-4 py-3 text-left">m²</th>
                 <th className="px-4 py-3 text-left">Hab.</th>
                 <th className="px-4 py-3 text-left">Planta</th>
-                <th className="px-4 py-3 text-left">Barrio</th>
                 <th className="px-4 py-3 text-left">Municipio</th>
+                <th className="px-4 py-3 text-left">Barrio</th>
                 <th className="px-4 py-3 text-left">Rent. bruta</th>
                 <th className="px-4 py-3 text-left">Bajada</th>
                 <th className="px-4 py-3 text-left">Días</th>
@@ -443,43 +574,9 @@ export default function ListingsTable({ listings, isLoading }: Props) {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {paginated.map((l, i) => (
-                <tr key={l.id ?? i} className="bg-white hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3">
-                    <span
-                      className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${
-                        LABEL_STYLES[l.score_label ?? "normal"] ?? LABEL_STYLES.normal
-                      }`}
-                    >
-                      {l.score ?? "—"}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 capitalize text-gray-600">{l.fuente}</td>
-                  <td className="px-4 py-3 max-w-xs truncate text-gray-800">{l.titulo ?? "—"}</td>
-                  <td className="px-4 py-3 font-medium text-gray-800">{fmt(l.precio_venta)}</td>
-                  <td className="px-4 py-3 text-gray-600">
-                    {l.precio_m2 != null ? l.precio_m2.toLocaleString("es-ES") + " €/m²" : "—"}
-                  </td>
-                  <td className="px-4 py-3 text-gray-600">{l.metros_cuadrados ?? "—"}</td>
-                  <td className="px-4 py-3 text-gray-600">{l.habitaciones ?? "—"}</td>
-                  <td className="px-4 py-3 text-gray-600">
-                    {l.tipo_propiedad === "Casa"
-                      ? <span className="text-amber-700 font-medium">Casa</span>
-                      : l.planta ?? "—"}
-                  </td>
-                  <td className="px-4 py-3 text-gray-600">{l.barrio ?? "—"}</td>
-                  <td className="px-4 py-3 text-gray-600">{l.municipio ?? "—"}</td>
-                  <td className="px-4 py-3 text-gray-600">
-                    {l.rentabilidad_bruta != null ? `${l.rentabilidad_bruta}%` : "—"}
-                  </td>
-                  <td className="px-4 py-3">
-                    {l.bajada_precio ? (
-                      <span className="text-purple-600 font-medium">↓ Bajada</span>
-                    ) : (
-                      <span className="text-gray-300">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-gray-600">{l.dias_en_mercado ?? "—"}</td>
+              {paginated.map((l, i) => {
+                const reportId = l.id ? reportByPropertyId.get(l.id) : undefined;
+                const accionesTd = (
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1">
                       <button
@@ -498,30 +595,68 @@ export default function ListingsTable({ listings, isLoading }: Props) {
                       >
                         <ExternalLinkIcon />
                       </a>
-                      {(() => {
-                        const reportId = l.id ? reportByPropertyId.get(l.id) : undefined;
-                        return reportId ? (
-                          <button
-                            onClick={() => navigate(`/informes/${reportId}`)}
-                            title="Ver informe"
-                            className="p-1.5 rounded-md text-blue-600 hover:text-blue-800 hover:bg-blue-50 transition-colors"
-                          >
-                            <DocumentIcon />
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => navigate("/informes/nuevo", { state: { listing: l } })}
-                            title="Crear informe"
-                            className="p-1.5 rounded-md text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                          >
-                            <DocumentIcon />
-                          </button>
-                        );
-                      })()}
+                      {reportId ? (
+                        <button
+                          onClick={() => navigate(`/informes/${reportId}`, { state: { from: "/" } })}
+                          title="Ver informe"
+                          className="p-1.5 rounded-md text-blue-600 hover:text-blue-800 hover:bg-blue-50 transition-colors"
+                        >
+                          <DocumentIcon />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => navigate("/informes/nuevo", { state: { listing: l } })}
+                          title="Crear informe"
+                          className="p-1.5 rounded-md text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                        >
+                          <DocumentIcon />
+                        </button>
+                      )}
                     </div>
                   </td>
-                </tr>
-              ))}
+                );
+                return (
+                  <tr key={l.id ?? i} className="bg-white hover:bg-gray-50 transition-colors">
+                    {accionesTd}
+                    <td className="px-4 py-3">
+                      <span
+                        className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${
+                          LABEL_STYLES[l.score_label ?? "normal"] ?? LABEL_STYLES.normal
+                        }`}
+                      >
+                        {l.score ?? "—"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 capitalize text-gray-600">{l.fuente}</td>
+                    <td className="px-4 py-3 max-w-xs truncate text-gray-800">{l.titulo ?? "—"}</td>
+                    <td className="px-4 py-3 font-medium text-gray-800 whitespace-nowrap">{fmt(l.precio_venta)}</td>
+                    <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
+                      {l.precio_m2 != null ? l.precio_m2.toLocaleString("es-ES") + " €/m²" : "—"}
+                    </td>
+                    <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{l.metros_cuadrados ?? "—"}</td>
+                    <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{l.habitaciones ?? "—"}</td>
+                    <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
+                      {l.tipo_propiedad === "Casa"
+                        ? <span className="text-amber-700 font-medium">Casa</span>
+                        : l.planta ?? "—"}
+                    </td>
+                    <td className="px-4 py-3 text-gray-600">{l.municipio ?? "—"}</td>
+                    <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{l.barrio ?? "—"}</td>
+                    <td className="px-4 py-3 text-gray-600">
+                      {l.rentabilidad_bruta != null ? `${l.rentabilidad_bruta}%` : "—"}
+                    </td>
+                    <td className="px-4 py-3">
+                      {l.bajada_precio ? (
+                        <span className="text-purple-600 font-medium">↓ Bajada</span>
+                      ) : (
+                        <span className="text-gray-300">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-gray-600">{l.dias_en_mercado ?? "—"}</td>
+                    {accionesTd}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

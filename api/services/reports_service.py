@@ -117,17 +117,22 @@ def render_report_html(report: dict) -> str:
 
 
 async def render_report_pdf(report: dict) -> bytes:
-    from playwright.async_api import async_playwright
+    import asyncio
     html = render_report_html(report)
-    async with async_playwright() as pw:
-        browser = await pw.chromium.launch()
-        page = await browser.new_page()
-        await page.set_content(html, wait_until="networkidle")
-        pdf = await page.pdf(format="A4", print_background=True, margin={
-            "top": "0mm", "right": "0mm", "bottom": "0mm", "left": "0mm"
-        })
-        await browser.close()
-    return pdf
+
+    def _render_sync(html_content: str) -> bytes:
+        from playwright.sync_api import sync_playwright
+        with sync_playwright() as pw:
+            browser = pw.chromium.launch()
+            page = browser.new_page()
+            page.set_content(html_content, wait_until="networkidle")
+            pdf = page.pdf(format="A4", print_background=True, margin={
+                "top": "0mm", "right": "0mm", "bottom": "0mm", "left": "0mm"
+            })
+            browser.close()
+        return pdf
+
+    return await asyncio.to_thread(_render_sync, html)
 
 
 def ai_estimate_market(property_data: dict) -> dict:
@@ -143,7 +148,7 @@ Datos del piso:
 - Precio: {property_data.get('precio', '?')} €
 - Metros: {property_data.get('metros', '?')} m²
 - Habitaciones: {property_data.get('habitaciones', '?')}
-- Estado: {property_data.get('estado', '?')}
+- Estado: {property_data.get('condition', '?')}
 
 Devuelve ÚNICAMENTE JSON válido con estos campos (sin markdown, sin explicaciones):
 {{

@@ -11,6 +11,7 @@ from .infrastructure.logger import get_logger
 from .models import Listing
 from .services.scorer import calcular_score, contar_campos_vacios
 from .scrapers import get_scraper
+from . import state as scraper_state
 
 log = get_logger("runner")
 
@@ -73,6 +74,7 @@ def run_target(target: dict, stats: RunStats) -> Optional[set[str]]:
 
     log.info("target_start", extra={"source": source, "url": url,
                                     "max_pages": max_pages, "max_results": max_results})
+    scraper_state.update("target_start", f"Buscando en {source.capitalize()}...", portal=source)
 
     try:
         scraper = get_scraper(source)
@@ -120,8 +122,9 @@ def run_target(target: dict, stats: RunStats) -> Optional[set[str]]:
             if not existed_before:
                 near_dup = find_near_duplicate(listing)
                 if near_dup:
-                    listing.pending_review = True
+                    listing.status = "pendiente_revision"
                     listing.duplicate_candidate_of = near_dup["url"]
+                    scraper_state.update("duplicate_candidate_detected", "Posible duplicado detectado")
                     log.info(
                         "duplicate_candidate_detected",
                         extra={"url": listing.url, "similar_to": near_dup["url"]},
@@ -133,8 +136,12 @@ def run_target(target: dict, stats: RunStats) -> Optional[set[str]]:
 
             if existed_before:
                 stats.total_updated += 1
+                scraper_state.inc_updated()
+                scraper_state.update("listing_updated", "Piso actualizado")
             else:
                 stats.total_new += 1
+                scraper_state.inc_new()
+                scraper_state.update("listing_inserted", "Piso guardado")
 
             # Alertar segun reglas
             if should_alert(saved, was_new=not existed_before):

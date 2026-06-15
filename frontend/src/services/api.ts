@@ -43,7 +43,20 @@ export interface ListingFilters {
   precio_max?: number;
   solo_activos?: boolean;
   limit?: number;
+  q?: string;
 }
+
+export interface ZonaOption {
+  tipo: "municipio" | "barrio";
+  valor: string;
+  label: string;
+  municipio?: string;
+}
+
+export const fetchListingZonas = async (): Promise<ZonaOption[]> => {
+  const { data } = await api.get<ZonaOption[]>("/listings/zonas");
+  return data;
+};
 
 export const fetchListings = async (filters: ListingFilters = {}): Promise<Listing[]> => {
   const { data } = await api.get<Listing[]>("/listings", { params: filters });
@@ -158,7 +171,9 @@ export interface ManualListingIn {
   municipio?: string;
   barrio?: string;
   provincia?: string;
-  estado?: string;
+  condition?: string;
+  ocupacion?: string;
+  situacion_legal?: string;
   ascensor?: boolean;
   terraza?: boolean;
   garaje?: boolean;
@@ -166,6 +181,31 @@ export interface ManualListingIn {
   alquiler_estimado?: number;
   precio_zona_m2?: number;
   planta?: string;
+  // Amenidades interiores
+  balcon?: boolean;
+  trastero?: boolean;
+  armarios_empotrados?: boolean;
+  aire_acondicionado?: boolean;
+  calefaccion?: boolean;
+  calefaccion_tipo?: string;
+  cocina_equipada?: boolean;
+  amueblado?: boolean;
+  // Edificio
+  exterior?: boolean;
+  orientacion?: string;
+  portero?: boolean;
+  puerta_blindada?: boolean;
+  doble_acristalamiento?: boolean;
+  adaptado_movilidad?: boolean;
+  // Zonas exteriores / comunidad
+  jardin?: boolean;
+  piscina?: boolean;
+  piscina_comunitaria?: boolean;
+  zonas_verdes_comunitarias?: boolean;
+  vigilancia?: boolean;
+  // Garaje
+  garaje_incluido?: boolean;
+  num_plazas_garaje?: number;
 }
 
 export interface BulkImportResult {
@@ -303,7 +343,7 @@ export interface AIEstimateRequest {
   precio: number;
   metros: number;
   habitaciones: number;
-  estado: string;
+  condition?: string;
 }
 
 export const aiEstimateMarket = async (
@@ -334,6 +374,29 @@ export const generateWeeklyReport = async (): Promise<{
 }> => {
   const { data } = await api.post("/telegram/generate-weekly");
   return data;
+};
+
+export interface ScraperStatus {
+  running: boolean;
+  done: boolean;
+  event: string | null;
+  message: string | null;
+  portal: string | null;
+  new: number;
+  updated: number;
+  errors: number;
+  queued: number;
+  started_at: string | null;
+  finished_at: string | null;
+}
+
+export const fetchScraperStatus = async (): Promise<ScraperStatus> => {
+  const { data } = await api.get<ScraperStatus>("/scraper/status");
+  return data;
+};
+
+export const dismissScraperStatus = async (): Promise<void> => {
+  await api.post("/scraper/status/dismiss");
 };
 
 export const publishTelegram = async (req: {
