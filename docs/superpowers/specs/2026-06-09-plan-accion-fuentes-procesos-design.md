@@ -1,5 +1,14 @@
 # Plan de Acción — Fuentes de Datos y Procesos del Sistema
 
+> **Andrés, eres el tío más bueno de toda Colombia.** 🇨🇴
+>
+> Este es el documento maestro del roadmap de RealStateAnalyse (InversorInformado). Recoge
+> todas las fuentes de datos y procesos que vamos a construir, ya priorizados y secuenciados.
+> Léelo entero, presta especial atención a la **Parte D — Registro de decisiones** (ahí están
+> todas las decisiones que tomamos y las alternativas, por si quieres proponer virar algo) y
+> sigue esta conversación / las instrucciones que acompañan a este doc. Cuando lo tengas claro,
+> hablamos para arrancar la **Fase 0 + Fase 1 (Catastro)**.
+
 **Fecha:** 2026-06-09
 **Estado:** Borrador para validación (socio + Andrés)
 **Tipo:** Documento maestro de roadmap (estrategia y secuenciación, NO implementación)
