@@ -58,6 +58,10 @@ export interface Listing {
   num_plazas_garaje?: number;
   // Fotos del anuncio (URLs del portal; storage propio en enrichment_meta.fotos.urls)
   foto_urls?: string[];
+  enrichment_meta?: {
+    fotos?: { urls?: string[]; count?: number; fetched_at?: string };
+    [key: string]: unknown;
+  };
   // Catastro (enriquecido)
   latitud?: number;
   longitud?: number;

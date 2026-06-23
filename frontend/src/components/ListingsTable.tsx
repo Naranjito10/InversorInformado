@@ -172,7 +172,7 @@ function ListingDrawer({ listing, onClose }: DrawerProps) {
       <div className="fixed inset-0 bg-black/30 z-40" onClick={onClose} />
       <div className="fixed top-0 right-0 h-full w-1/2 bg-white shadow-2xl z-50 flex flex-col overflow-hidden">
 
-        <div className="flex items-start justify-between px-6 py-4 border-b border-gray-200 bg-gray-50 flex-shrink-0">
+        <div className="flex items-start justify-between px-6 py-4 border-b border-gray-200 bg-gray-50 shrink-0">
           <div className="min-w-0 mr-4">
             <h2 className="text-base font-semibold text-gray-800 truncate">
               {listing.titulo ?? "Sin título"}
@@ -188,11 +188,37 @@ function ListingDrawer({ listing, onClose }: DrawerProps) {
           </div>
           <button
             onClick={onClose}
-            className="flex-shrink-0 p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-200 transition-colors"
+            className="shrink-0 p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-200 transition-colors"
           >
             <XIcon />
           </button>
         </div>
+
+        {(() => {
+          const photos = listing.enrichment_meta?.fotos?.urls?.length
+            ? listing.enrichment_meta.fotos.urls
+            : listing.foto_urls?.length
+            ? listing.foto_urls
+            : null;
+          if (!photos) return null;
+          return (
+            <div className="shrink-0 border-b border-gray-100">
+              <div className="flex gap-2 overflow-x-auto px-6 py-3 scrollbar-thin">
+                {photos.map((url, i) => (
+                  <a key={i} href={url} target="_blank" rel="noreferrer" className="shrink-0">
+                    <img
+                      src={url}
+                      alt={`foto ${i + 1}`}
+                      className="h-32 w-48 object-cover rounded-lg border border-gray-200 hover:opacity-90 transition-opacity"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                    />
+                  </a>
+                ))}
+              </div>
+              <p className="text-xs text-gray-400 px-6 pb-2">{photos.length} foto{photos.length !== 1 ? "s" : ""}</p>
+            </div>
+          );
+        })()}
 
         <div className="flex-1 overflow-y-auto px-6 py-5">
           <form
@@ -501,7 +527,7 @@ function ListingDrawer({ listing, onClose }: DrawerProps) {
           </form>
         </div>
 
-        <div className="flex-shrink-0 px-6 py-4 border-t border-gray-200 bg-white flex items-center gap-3">
+        <div className="shrink-0 px-6 py-4 border-t border-gray-200 bg-white flex items-center gap-3">
           {saved && (
             <span className="text-sm text-green-600 font-medium">Guardado correctamente</span>
           )}
