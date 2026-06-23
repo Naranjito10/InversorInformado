@@ -21,32 +21,59 @@ def test_portal(portal: str):
 
 @router.get("/test-catastro-dnprc")
 def test_catastro_dnprc(rc: str = "9319414DF2891G"):
-    """Llama directamente al OVC DNPRC y devuelve la respuesta cruda para diagnóstico."""
+    """Prueba múltiples URLs del OVC DNPRC para encontrar cuál funciona."""
     pc1 = rc[:7]
     pc2 = rc[7:14] if len(rc) >= 14 else ""
-    url = (
-        f"http://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC/"
-        f"OVCCallejeroRC.asmx/Consulta_DNPRC"
-        f"?Provincia=&Municipio=&RC.PC1={pc1}&RC.PC2={pc2}&RC.Car=&RC.CC1=&RC.CC2="
-    )
     ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/125.0.0.0 Safari/537.36"
-    headers = {
+    headers_get = {
         "User-Agent": ua,
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Accept-Language": "es-ES,es;q=0.9",
     }
-    try:
-        with httpx.Client(follow_redirects=False, timeout=12) as client:
-            resp = client.get(url, headers=headers)
-        return {
-            "url": url,
-            "status": resp.status_code,
-            "location": resp.headers.get("location", ""),
-            "content_type": resp.headers.get("content-type", ""),
-            "body": resp.text[:500],
-        }
-    except Exception as exc:
-        return {"url": url, "error": str(exc)}
+    soap_body = (
+        '<?xml version="1.0" encoding="utf-8"?>'
+        '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">'
+        "<soap:Body>"
+        '<Consulta_DNPRC xmlns="http://www.catastro.meh.es/">'
+        "<Provincia></Provincia><Municipio></Municipio>"
+        f"<RC><PC1>{pc1}</PC1><PC2>{pc2}</PC2><Car></Car><CC1></CC1><CC2></CC2></RC>"
+        "</Consulta_DNPRC>"
+        "</soap:Body>"
+        "</soap:Envelope>"
+    )
+    headers_soap = {
+        "Content-Type": "text/xml; charset=utf-8",
+        "SOAPAction": "http://www.catastro.meh.es/Consulta_DNPRC",
+        "User-Agent": ua,
+    }
+
+    candidates = [
+        ("GET_asmx_root", "GET", "http://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC/OVCCallejeroRC.asmx", None, headers_get),
+        ("GET_method_url", "GET", f"http://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC/OVCCallejeroRC.asmx/Consulta_DNPRC?Provincia=&Municipio=&RC.PC1={pc1}&RC.PC2={pc2}&RC.Car=&RC.CC1=&RC.CC2=", None, headers_get),
+        ("SOAP_POST", "POST", "http://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC/OVCCallejeroRC.asmx", soap_body, headers_soap),
+        ("GET_coordenadas_dnprc", "GET", f"http://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC/OVCCoordenadas.asmx/Consulta_DNPRC?Provincia=&Municipio=&RC.PC1={pc1}&RC.PC2={pc2}&RC.Car=&RC.CC1=&RC.CC2=", None, headers_get),
+    ]
+
+    results = []
+    with httpx.Client(follow_redirects=False, timeout=12) as client:
+        for name, method, url, body, hdrs in candidates:
+            try:
+                if method == "POST":
+                    resp = client.post(url, content=body.encode(), headers=hdrs)
+                else:
+                    resp = client.get(url, headers=hdrs)
+                results.append({
+                    "test": name,
+                    "url": url,
+                    "status": resp.status_code,
+                    "location": resp.headers.get("location", ""),
+                    "content_type": resp.headers.get("content-type", ""),
+                    "body": resp.text[:200],
+                })
+            except Exception as exc:
+                results.append({"test": name, "url": url, "error": str(exc)})
+
+    return {"rc": rc, "results": results}
 
 
 @router.get("/logs")
