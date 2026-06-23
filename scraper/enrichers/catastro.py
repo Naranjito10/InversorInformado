@@ -1,13 +1,20 @@
 """
 CatastroEnricher — enriquece listings con datos del Catastro Español (OVC REST).
 
-Flujo por listing:
+Flujo actual (lo que la API OVC expone libremente):
   1. Geocodifica dirección → (lat, lon) vía Nominatim si no hay coords
   2. Consulta_RCCOOR GET → obtiene referencia catastral (PC1+PC2)
-  3. Consulta_DNPRC GET  → obtiene año de construcción y superficie
-  4. Deriva ite_obligatoria = (año_actual - anyo_construccion) >= 50
 
-Si el listing ya tiene referencia_catastral guardada, salta directo al paso 3.
+Campos que escribe: referencia_catastral, latitud, longitud (si no existían).
+
+# ── LIMITACIÓN CONOCIDA ────────────────────────────────────────────────────────
+# anyo_construccion y superficie_catastral NO están disponibles vía API libre:
+# el OVC protege esos datos para inmuebles residenciales por privacidad.
+# La única fuente es la Sede Electrónica (HTML scraping):
+#   https://www1.sedecatastro.gob.es/CYCBienInmueble/OVCListaBienes.aspx?rc1={pc1}&rc2={pc2}
+# Devuelve año de construcción y superficie por unidad visual en HTML.
+# TODO: implementar _scrape_building_year(pc1, pc2) con BeautifulSoup.
+# ──────────────────────────────────────────────────────────────────────────────
 
 Circuit breaker: tras _OVC_DOWN_AFTER_FAILURES consecutivos, no se intenta más
 hasta que pasen _OVC_DOWN_BACKOFF_HOURS. Se resetea al reiniciar el servidor.
@@ -16,7 +23,7 @@ from __future__ import annotations
 import logging
 import time
 import xml.etree.ElementTree as ET
-from datetime import date, datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 
 import httpx
 
@@ -26,10 +33,16 @@ from .geocoder import geocode
 
 log = logging.getLogger(__name__)
 
-# RCCOOR: GET sobre OVCCoordenadas.asmx (confirmado funcional desde IP española)
-_OVC_RCCOOR = "http://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC/OVCCoordenadas.asmx/Consulta_RCCOOR"
-# DNPRC: GET sobre OVCCallejeroRC.asmx
-_OVC_DNPRC = "http://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC/OVCCallejeroRC.asmx/Consulta_DNPRC"
+_OVC_BASE = "http://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC"
+# RCCOOR: coordenadas → referencia catastral
+_OVC_RCCOOR = f"{_OVC_BASE}/OVCCoordenadas.asmx/Consulta_RCCOOR"
+# Municipio texto → códigos numéricos Catastro (distintos de los INE)
+_OVC_MUNICIPIO = f"{_OVC_BASE}/OVCCallejeroCodigos.asmx/ConsultaMunicipioCodigos"
+# DNPRC: RC + códigos Catastro → año construcción y superficie
+_OVC_DNPRC = f"{_OVC_BASE}/OVCCallejeroCodigos.asmx/Consulta_DNPRC_Codigos"
+
+# Caché en memoria: "BARCELONA" → ("8", "900")
+_municipio_codes_cache: dict[str, tuple[str, str]] = {}
 
 _UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
 _HEADERS_GET = {
@@ -84,34 +97,17 @@ class CatastroEnricher(BaseEnricher):
     name = "catastro"
 
     def needs_enrichment(self, listing_row: dict) -> bool:
-        has_rc = bool(listing_row.get("referencia_catastral"))
-        has_anyo = listing_row.get("anyo_construccion") is not None
-
-        # Totalmente enriquecido
-        if has_rc and has_anyo:
+        # RC es el único campo que podemos obtener de la API OVC actualmente
+        if listing_row.get("referencia_catastral"):
             return False
 
         if _ovc_is_down():
             return False
 
-        meta = listing_row.get("enrichment_meta") or {}
-
-        # Tiene RC pero le falta el año: solo necesita DNPRC
-        if has_rc:
-            failed_at_str = meta.get("catastro_dnprc_failed_at")
-            if failed_at_str:
-                try:
-                    failed_at = datetime.fromisoformat(failed_at_str)
-                    if (datetime.now(timezone.utc) - failed_at).days < _GEOCODE_RETRY_DAYS:
-                        return False
-                except (ValueError, TypeError):
-                    pass
-            return True
-
-        # Sin RC: necesita municipio para geocodificar
         if not listing_row.get("municipio"):
             return False
 
+        meta = listing_row.get("enrichment_meta") or {}
         failed_at_str = meta.get("catastro_geocode_failed_at")
         if failed_at_str:
             try:
@@ -127,20 +123,6 @@ class CatastroEnricher(BaseEnricher):
         results: dict = {}
         listing_id = listing_row.get("id")
 
-        # Si ya tiene referencia_catastral, saltar directo a DNPRC
-        rc = listing_row.get("referencia_catastral")
-        if rc:
-            details = self._get_building_details(rc, listing_id)
-            if details:
-                anyo = details.get("anyo_construccion")
-                if anyo:
-                    results["anyo_construccion"] = anyo
-                    results["ite_obligatoria"] = (date.today().year - anyo) >= 50
-                if details.get("superficie_catastral"):
-                    results["superficie_catastral"] = details["superficie_catastral"]
-            return results
-
-        # Flujo completo: geocodificar → RCCOOR → DNPRC
         lat = listing_row.get("latitud") or listing_row.get("lat")
         lon = listing_row.get("longitud") or listing_row.get("lon")
 
@@ -162,28 +144,49 @@ class CatastroEnricher(BaseEnricher):
             results["longitud"] = lon
 
         rc = self._get_rc_by_coords(lat, lon)
-        if not rc:
-            log.warning("catastro_rc_not_found", extra={"id": listing_id, "lat": lat, "lon": lon})
-            return results
-        results["referencia_catastral"] = rc
-        time.sleep(_RATE_SLEEP)
-
-        details = self._get_building_details(rc, listing_id)
-        if details:
-            anyo = details.get("anyo_construccion")
-            if anyo:
-                results["anyo_construccion"] = anyo
-                results["ite_obligatoria"] = (date.today().year - anyo) >= 50
-            if details.get("superficie_catastral"):
-                results["superficie_catastral"] = details["superficie_catastral"]
+        if rc:
+            results["referencia_catastral"] = rc
 
         return results
 
+    # ── Métodos reservados para futura extensión ─────────────────────────────
+    # Cuando se implemente el HTML scraper de Sede Electrónica para anyo_construccion,
+    # estos métodos serán necesarios para construir la URL de consulta DNPRC.
+
+    def _get_municipio_codes(self, municipio: str) -> tuple[str, str] | None:
+        """ConsultaMunicipioCodigos → (cd, cmc) en sistema Catastro (≠ INE). Necesario para DNPRC."""
+        key = municipio.upper().strip()
+        if key in _municipio_codes_cache:
+            return _municipio_codes_cache[key]
+        url = f"{_OVC_MUNICIPIO}?CodigoProvincia=&CodigoMunicipio=&CodigoMunicipioINE=&Municipio={key}"
+        try:
+            with httpx.Client(follow_redirects=True) as client:
+                resp = client.get(url, headers=_HEADERS_GET, timeout=_TIMEOUT)
+            resp.raise_for_status()
+            root = ET.fromstring(resp.text)
+            # Iterar <muni> buscando <nm> que coincida (la respuesta puede incluir varios)
+            for muni_elem in root.iter():
+                tag = muni_elem.tag.split("}")[-1] if "}" in muni_elem.tag else muni_elem.tag
+                if tag != "muni":
+                    continue
+                nm = _find_text(muni_elem, "nm")
+                if not nm or nm.upper().strip() != key:
+                    continue
+                # Códigos Catastro están en <locat><cd> y <locat><cmc> (distintos de INE en <loine>)
+                cd = _find_text(muni_elem, "cd")
+                cmc = _find_text(muni_elem, "cmc")
+                if cd and cmc:
+                    result = (cd.strip(), cmc.strip())
+                    _municipio_codes_cache[key] = result
+                    log.info("catastro_municipio_codes", extra={"municipio": municipio, "cd": cd, "cmc": cmc})
+                    return result
+            log.warning("catastro_municipio_codes_not_found", extra={"municipio": municipio, "body": resp.text[:300]})
+        except Exception as exc:  # noqa: BLE001
+            log.warning("catastro_municipio_codes_failed", extra={"municipio": municipio, "error": str(exc)})
+        return None
+
     def _get_rc_by_coords(self, lat: float, lon: float) -> str | None:
-        """
-        Consulta_RCCOOR GET (OVCCoordenadas.asmx): coordenadas → PC1+PC2.
-        SRS se embebe en la URL para evitar que httpx codifique ':' → '%3A'.
-        """
+        """Consulta_RCCOOR GET → RC (PC1+PC2). SRS se embebe en la URL para evitar que httpx codifique ':' → '%3A'."""
         url = f"{_OVC_RCCOOR}?SRS=EPSG:4326&Coordenada_X={lon}&Coordenada_Y={lat}"
         try:
             with httpx.Client(follow_redirects=True) as client:
@@ -202,7 +205,7 @@ class CatastroEnricher(BaseEnricher):
                 _ovc_record_success()
                 return f"{pc1}{pc2}"
 
-            log.warning("catastro_rccoor_no_pc", extra={"lat": lat, "lon": lon, "body": resp.text[:200]})
+            log.warning("catastro_rccoor_no_pc", extra={"lat": lat, "lon": lon, "body": resp.text[:800]})
             return None
         except httpx.HTTPStatusError as exc:
             log.error("catastro_rccoor_failed", extra={
@@ -216,11 +219,15 @@ class CatastroEnricher(BaseEnricher):
             _ovc_record_failure()
         return None
 
-    def _get_building_details(self, rc: str, listing_id: str | None = None) -> dict | None:
-        """Consulta_DNPRC GET (OVCCallejeroRC.asmx): RC → año construcción y superficie."""
-        pc1 = rc[:7]
-        pc2 = rc[7:14] if len(rc) >= 14 else ""
-        url = f"{_OVC_DNPRC}?Provincia=&Municipio=&RC.PC1={pc1}&RC.PC2={pc2}&RC.Car=&RC.CC1=&RC.CC2="
+    def _get_building_details(
+        self,
+        rc: str,
+        listing_id: str | None = None,
+        cod_provincia: str = "",
+        cod_municipio: str = "",
+    ) -> dict | None:
+        """Consulta_DNPRC_Codigos GET: RC + códigos numéricos → año construcción y superficie."""
+        url = f"{_OVC_DNPRC}?CodigoProvincia={cod_provincia}&CodigoMunicipio={cod_municipio}&CodigoMunicipioINE=&RC={rc}"
         try:
             with httpx.Client(follow_redirects=False) as client:
                 resp = client.get(url, headers=_HEADERS_GET, timeout=_TIMEOUT)
