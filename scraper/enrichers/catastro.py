@@ -3,15 +3,11 @@ CatastroEnricher — enriquece listings con datos del Catastro Español (OVC RES
 
 Flujo por listing:
   1. Geocodifica dirección → (lat, lon) vía Nominatim si no hay coords
-  2. Consulta_RCCOOR REST → obtiene referencia catastral (PC1+PC2)
-  3. Consulta_DNPRC REST  → obtiene año de construcción y superficie
+  2. Consulta_RCCOOR GET → obtiene referencia catastral (PC1+PC2)
+  3. Consulta_DNPRC GET  → obtiene año de construcción y superficie
   4. Deriva ite_obligatoria = (año_actual - anyo_construccion) >= 50
 
-URL del OVC: http://ovc.catastro.meh.es/OVCServWeb/OVCWcfLibres/RESTServiceLibres.svc
-  - Solo disponible vía HTTP (no HTTPS). El Catastro está migrando de ovc.catastro.meh.es
-    a la Sede Electrónica pero los servicios WCF libres aún no están en el nuevo dominio.
-  - La disponibilidad es intermitente; cuando el servicio está caído el circuit breaker
-    evita spamear peticiones fallidas durante el resto del batch.
+Si el listing ya tiene referencia_catastral guardada, salta directo al paso 3.
 
 Circuit breaker: tras _OVC_DOWN_AFTER_FAILURES consecutivos, no se intenta más
 hasta que pasen _OVC_DOWN_BACKOFF_HOURS. Se resetea al reiniciar el servidor.
@@ -30,21 +26,16 @@ from .geocoder import geocode
 
 log = logging.getLogger(__name__)
 
-# RCCOOR: GET sobre OVCCoordenadas.asmx (confirmado funcional)
+# RCCOOR: GET sobre OVCCoordenadas.asmx (confirmado funcional desde IP española)
 _OVC_RCCOOR = "http://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC/OVCCoordenadas.asmx/Consulta_RCCOOR"
-# DNPRC: SOAP POST sobre OVCCallejeroRC.asmx (solo disponible vía SOAP)
-_OVC_SOAP = "http://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC/OVCCallejeroRC.asmx"
+# DNPRC: GET sobre OVCCallejeroRC.asmx
+_OVC_DNPRC = "http://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC/OVCCallejeroRC.asmx/Consulta_DNPRC"
 
 _UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
 _HEADERS_GET = {
     "User-Agent": _UA,
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     "Accept-Language": "es-ES,es;q=0.9",
-}
-_HEADERS_SOAP = {
-    "Content-Type": "text/xml; charset=utf-8",
-    "SOAPAction": "http://www.catastro.meh.es/Consulta_DNPRC",
-    "User-Agent": _UA,
 }
 _TIMEOUT = 12
 _RATE_SLEEP = 1.1
@@ -93,14 +84,34 @@ class CatastroEnricher(BaseEnricher):
     name = "catastro"
 
     def needs_enrichment(self, listing_row: dict) -> bool:
-        if listing_row.get("referencia_catastral"):
+        has_rc = bool(listing_row.get("referencia_catastral"))
+        has_anyo = listing_row.get("anyo_construccion") is not None
+
+        # Totalmente enriquecido
+        if has_rc and has_anyo:
             return False
-        if not listing_row.get("municipio"):
-            return False
+
         if _ovc_is_down():
-            return False  # circuit breaker abierto, no intentar
+            return False
 
         meta = listing_row.get("enrichment_meta") or {}
+
+        # Tiene RC pero le falta el año: solo necesita DNPRC
+        if has_rc:
+            failed_at_str = meta.get("catastro_dnprc_failed_at")
+            if failed_at_str:
+                try:
+                    failed_at = datetime.fromisoformat(failed_at_str)
+                    if (datetime.now(timezone.utc) - failed_at).days < _GEOCODE_RETRY_DAYS:
+                        return False
+                except (ValueError, TypeError):
+                    pass
+            return True
+
+        # Sin RC: necesita municipio para geocodificar
+        if not listing_row.get("municipio"):
+            return False
+
         failed_at_str = meta.get("catastro_geocode_failed_at")
         if failed_at_str:
             try:
@@ -116,6 +127,20 @@ class CatastroEnricher(BaseEnricher):
         results: dict = {}
         listing_id = listing_row.get("id")
 
+        # Si ya tiene referencia_catastral, saltar directo a DNPRC
+        rc = listing_row.get("referencia_catastral")
+        if rc:
+            details = self._get_building_details(rc, listing_id)
+            if details:
+                anyo = details.get("anyo_construccion")
+                if anyo:
+                    results["anyo_construccion"] = anyo
+                    results["ite_obligatoria"] = (date.today().year - anyo) >= 50
+                if details.get("superficie_catastral"):
+                    results["superficie_catastral"] = details["superficie_catastral"]
+            return results
+
+        # Flujo completo: geocodificar → RCCOOR → DNPRC
         lat = listing_row.get("latitud") or listing_row.get("lat")
         lon = listing_row.get("longitud") or listing_row.get("lon")
 
@@ -143,7 +168,7 @@ class CatastroEnricher(BaseEnricher):
         results["referencia_catastral"] = rc
         time.sleep(_RATE_SLEEP)
 
-        details = self._get_building_details(rc)
+        details = self._get_building_details(rc, listing_id)
         if details:
             anyo = details.get("anyo_construccion")
             if anyo:
@@ -191,28 +216,22 @@ class CatastroEnricher(BaseEnricher):
             _ovc_record_failure()
         return None
 
-    def _get_building_details(self, rc: str) -> dict | None:
-        """Consulta_DNPRC SOAP POST (OVCCallejeroRC.asmx): RC → año construcción y superficie."""
+    def _get_building_details(self, rc: str, listing_id: str | None = None) -> dict | None:
+        """Consulta_DNPRC GET (OVCCallejeroRC.asmx): RC → año construcción y superficie."""
         pc1 = rc[:7]
         pc2 = rc[7:14] if len(rc) >= 14 else ""
-        body = (
-            '<?xml version="1.0" encoding="utf-8"?>'
-            '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">'
-            "<soap:Body>"
-            '<Consulta_DNPRC xmlns="http://www.catastro.meh.es/">'
-            "<Provincia></Provincia><Municipio></Municipio>"
-            f"<RC><PC1>{pc1}</PC1><PC2>{pc2}</PC2><Car></Car><CC1></CC1><CC2></CC2></RC>"
-            "</Consulta_DNPRC>"
-            "</soap:Body>"
-            "</soap:Envelope>"
-        )
+        url = f"{_OVC_DNPRC}?Provincia=&Municipio=&RC.PC1={pc1}&RC.PC2={pc2}&RC.Car=&RC.CC1=&RC.CC2="
         try:
             with httpx.Client(follow_redirects=True) as client:
-                resp = client.post(_OVC_SOAP, content=body.encode(), headers=_HEADERS_SOAP, timeout=_TIMEOUT)
+                resp = client.get(url, headers=_HEADERS_GET, timeout=_TIMEOUT)
             resp.raise_for_status()
 
             if "<html" in resp.text[:200].lower():
                 log.warning("catastro_dnprc_html", extra={"rc": rc, "body": resp.text[:200]})
+                if listing_id:
+                    db.merge_enrichment_meta(listing_id, {
+                        "catastro_dnprc_failed_at": datetime.now(timezone.utc).isoformat()
+                    })
                 return None
 
             root = ET.fromstring(resp.text)
@@ -233,9 +252,14 @@ class CatastroEnricher(BaseEnricher):
         except httpx.HTTPStatusError as exc:
             log.error("catastro_dnprc_failed", extra={
                 "rc": rc,
+                "url": url,
                 "status": exc.response.status_code,
                 "body": exc.response.text[:200],
             })
+            if listing_id:
+                db.merge_enrichment_meta(listing_id, {
+                    "catastro_dnprc_failed_at": datetime.now(timezone.utc).isoformat()
+                })
         except Exception as exc:  # noqa: BLE001
-            log.error("catastro_dnprc_failed", extra={"rc": rc, "error": str(exc)})
+            log.error("catastro_dnprc_failed", extra={"rc": rc, "url": url, "error": str(exc)})
         return None
