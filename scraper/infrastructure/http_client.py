@@ -152,7 +152,9 @@ def _fetch_js(url: str, proxy: Optional[str], timeout: int) -> str:
         except FetchError:
             raise
         except Exception as exc:
-            if attempt == 0 and "thread" in str(exc).lower():
+            exc_str = str(exc).lower()
+            session_dead = any(s in exc_str for s in ("thread", "context manager", "closed", "disconnected", "browser"))
+            if attempt == 0 and session_dead:
                 log.warning("stealth_session_dead_reconnecting", extra={"url": url})
                 _close_stealth_session()
                 continue
