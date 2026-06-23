@@ -4,7 +4,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Optional
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 
 class Listing(BaseModel):
@@ -103,8 +103,23 @@ class Listing(BaseModel):
     # Deduplicacion
     duplicate_candidate_of: Optional[str] = None
 
+    # Catastro / geocodificación (escritos por CatastroEnricher vía set_enrichment_field)
+    latitud: Optional[float] = None
+    longitud: Optional[float] = None
+    referencia_catastral: Optional[str] = None
+    anyo_construccion: Optional[int] = None
+    superficie_catastral: Optional[int] = None
+    ite_obligatoria: Optional[bool] = None
+
+    # Fotos del anuncio — URLs del portal (siempre); storage propio en enrichment_meta["fotos"]
+    foto_urls: list[str] = Field(default_factory=list)
+
     # Datos crudos para reparsear si hace falta
     raw_data: Optional[dict[str, Any]] = None
+
+    # Procedencia y frescura de cada campo enriquecido
+    # {"anyo_construccion": {"source": "catastro", "fetched_at": "2026-06-21T10:00:00Z"}}
+    enrichment_meta: dict = Field(default_factory=dict)
 
     @field_validator("certificado_energetico")
     @classmethod
@@ -117,9 +132,13 @@ class Listing(BaseModel):
         return None
 
     def to_db_dict(self) -> dict[str, Any]:
-        """Serializa para insertar en Supabase. Excluye None; preserva False y status."""
+        """Serializa para insertar en Supabase. Excluye None; preserva False y status.
+        enrichment_meta: solo lo escribe set_enrichment_field().
+        foto_urls vacío: no sobreescribe fotos ya almacenadas en re-scrapes."""
         data = self.model_dump(mode="json", exclude_none=False)
         return {
             k: v for k, v in data.items()
-            if v is not None or k in {"status", "veces_visto", "bajada_precio"}
+            if (v is not None or k in {"status", "veces_visto", "bajada_precio"})
+            and k != "enrichment_meta"
+            and not (k == "foto_urls" and not v)
         }

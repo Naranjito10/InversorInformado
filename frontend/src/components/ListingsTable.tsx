@@ -467,6 +467,37 @@ function ListingDrawer({ listing, onClose }: DrawerProps) {
                 </p>
               </div>
             </div>
+
+            {(listing.anyo_construccion != null || listing.referencia_catastral) && (
+              <div className="grid grid-cols-4 gap-3 p-4 bg-blue-50 rounded-xl border border-blue-100 text-sm">
+                <div>
+                  <p className="text-xs text-gray-400 mb-0.5">Año construcción</p>
+                  <p className="font-medium text-gray-700">{listing.anyo_construccion ?? "—"}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400 mb-0.5">ITE obligatoria</p>
+                  <p className="font-medium">
+                    {listing.ite_obligatoria == null
+                      ? <span className="text-gray-700">—</span>
+                      : listing.ite_obligatoria
+                      ? <span className="text-orange-600 font-semibold">Sí</span>
+                      : <span className="text-green-600">No</span>}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400 mb-0.5">Sup. catastral</p>
+                  <p className="font-medium text-gray-700">
+                    {listing.superficie_catastral != null ? `${listing.superficie_catastral} m²` : "—"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400 mb-0.5">Ref. catastral</p>
+                  <p className="font-medium text-gray-700 text-xs font-mono truncate">
+                    {listing.referencia_catastral ?? "—"}
+                  </p>
+                </div>
+              </div>
+            )}
           </form>
         </div>
 

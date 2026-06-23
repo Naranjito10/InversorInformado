@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
-from typing import Optional
+from typing import Any, Optional
 
 from .config import config
 from .logger import get_logger
@@ -329,6 +329,39 @@ def keep_new_listing(listing_id: str) -> bool:
         return False
 
 
+def get_config_value(key: str, default: str | None = None) -> str | None:
+    """Lee un valor de la tabla config. Devuelve default si no existe o hay error."""
+    client = get_client()
+    if client is None:
+        return default
+    try:
+        res = client.table("config").select("value").eq("key", key).limit(1).execute()
+        return res.data[0]["value"] if res.data else default
+    except Exception:  # noqa: BLE001
+        return default
+
+
+def query_listings_for_enrichment(min_score: int = 40, limit: int = 100) -> list[dict]:
+    """Listings activos con score >= min_score, ordenados por score desc."""
+    client = get_client()
+    if client is None:
+        return []
+    try:
+        res = (
+            client.table("listings")
+            .select("*")
+            .eq("status", "activo")
+            .gte("score", min_score)
+            .order("score", desc=True)
+            .limit(limit)
+            .execute()
+        )
+        return res.data or []
+    except Exception as exc:  # noqa: BLE001
+        log.error("db_query_failed", extra={"error": str(exc)})
+        return []
+
+
 def get_price_drops_last_24h(min_score: int = 60, min_pct: float = 5.0) -> list[dict]:  # noqa: ARG001
     """Lista de anuncios con bajada significativa de precio en las ultimas 24h."""
     client = get_client()
@@ -348,6 +381,75 @@ def get_price_drops_last_24h(min_score: int = 60, min_pct: float = 5.0) -> list[
     except Exception as exc:  # noqa: BLE001
         log.error("db_query_failed", extra={"error": str(exc)})
         return []
+
+
+def merge_enrichment_meta(listing_id: str, meta_updates: dict) -> bool:
+    """
+    Fusiona claves en enrichment_meta sin tocar ninguna columna del listing.
+    Útil para registrar intentos fallidos sin crear columnas sintéticas.
+    """
+    client = get_client()
+    if client is None:
+        return False
+    try:
+        res = (
+            client.table("listings")
+            .select("enrichment_meta")
+            .eq("id", listing_id)
+            .limit(1)
+            .execute()
+        )
+        if not res.data:
+            return False
+        meta: dict = res.data[0].get("enrichment_meta") or {}
+        meta.update(meta_updates)
+        client.table("listings").update({"enrichment_meta": meta}).eq("id", listing_id).execute()
+        return True
+    except Exception as exc:  # noqa: BLE001
+        log.error("db_merge_enrichment_meta_failed", extra={"id": listing_id, "error": str(exc)})
+        return False
+
+
+def set_enrichment_field(
+    listing_id: str,
+    field: str,
+    source: str,
+    value: Any,
+) -> bool:
+    """
+    Escribe un campo enriquecido y registra su procedencia en enrichment_meta.
+    Lee el meta actual, lo actualiza en Python y lo vuelve a escribir junto al
+    campo. Seguro porque el enricher_runner procesa pisos de forma secuencial.
+    """
+    client = get_client()
+    if client is None:
+        return False
+    now = datetime.now(timezone.utc).isoformat()
+    try:
+        res = (
+            client.table("listings")
+            .select("enrichment_meta")
+            .eq("id", listing_id)
+            .limit(1)
+            .execute()
+        )
+        if not res.data:
+            log.error("set_enrichment_not_found", extra={"id": listing_id, "field": field})
+            return False
+
+        meta: dict = res.data[0].get("enrichment_meta") or {}
+        meta[field] = {"source": source, "fetched_at": now}
+
+        client.table("listings").update({
+            field: value,
+            "enrichment_meta": meta,
+        }).eq("id", listing_id).execute()
+
+        log.info("enrichment_field_set", extra={"id": listing_id, "field": field, "source": source})
+        return True
+    except Exception as exc:  # noqa: BLE001
+        log.error("db_set_enrichment_field_failed", extra={"id": listing_id, "field": field, "error": str(exc)})
+        return False
 
 
 def get_high_score_listings(min_score: int = 80, limit: int = 50) -> list[dict]:

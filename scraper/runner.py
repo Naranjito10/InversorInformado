@@ -12,6 +12,7 @@ from .models import Listing
 from .services.scorer import calcular_score, contar_campos_vacios
 from .scrapers import get_scraper
 from . import state as scraper_state
+from . import enricher_runner, queue_worker
 
 log = get_logger("runner")
 
@@ -205,6 +206,9 @@ def run_targets(targets: list[dict]) -> RunStats:
             "errors": stats.total_errors,
         },
     )
+    if stats.total_new > 0:
+        log.info("enrichment_queued", extra={"new_listings": stats.total_new})
+        queue_worker.submit(enricher_runner.run_batch)
     return stats
 
 
@@ -250,6 +254,9 @@ def run_cycle() -> RunStats:
             "errors": stats.total_errors,
         },
     )
+    if stats.total_new > 0:
+        log.info("enrichment_queued", extra={"new_listings": stats.total_new})
+        queue_worker.submit(enricher_runner.run_batch)
     return stats
 
 

@@ -104,6 +104,24 @@ class FotocasaScraper(BaseScraper):
         item["lat"] = coords.get("latitude")
         item["lon"] = coords.get("longitude")
 
+        # Fotos — multimedia.images o images directo en el objeto
+        multimedia = raw.get("multimedia") or {}
+        images = multimedia.get("images") or raw.get("images") or []
+        foto_urls: list[str] = []
+        for img in images:
+            url = ""
+            if isinstance(img, dict):
+                url = img.get("url") or img.get("src") or img.get("URL") or ""
+            elif isinstance(img, str):
+                url = img
+            if url and url.startswith("http") and any(
+                ext in url.lower() for ext in (".jpg", ".jpeg", ".png", ".webp")
+            ):
+                foto_urls.append(url)
+            if len(foto_urls) >= 10:
+                break
+        item["foto_urls"] = foto_urls
+
         # Fallback titulo si el JSON no lo trae
         if not item.get("titulo"):
             parts = [item.get("barrio"), item.get("municipio")]

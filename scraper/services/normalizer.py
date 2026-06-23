@@ -266,6 +266,7 @@ def normalize(source: str, raw: dict[str, Any]) -> Listing:
         alquiler_estimado=clean_int(raw.get("alquiler_estimado")),
         precio_zona_m2=clean_int(raw.get("precio_zona_m2")),
 
+        foto_urls=raw.get("foto_urls") or [],
         raw_data=raw,
     )
     return listing

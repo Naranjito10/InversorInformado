@@ -107,6 +107,7 @@ class ManualListingIn(BaseModel):
     vigilancia: Optional[bool] = None
     garaje_incluido: Optional[bool] = None
     num_plazas_garaje: Optional[int] = None
+    referencia_catastral: Optional[str] = None
 
 
 class CheckUrlsRequest(BaseModel):

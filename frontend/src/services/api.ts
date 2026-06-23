@@ -206,6 +206,7 @@ export interface ManualListingIn {
   // Garaje
   garaje_incluido?: boolean;
   num_plazas_garaje?: number;
+  referencia_catastral?: string;
 }
 
 export interface BulkImportResult {
@@ -397,6 +398,30 @@ export const fetchScraperStatus = async (): Promise<ScraperStatus> => {
 
 export const dismissScraperStatus = async (): Promise<void> => {
   await api.post("/scraper/status/dismiss");
+};
+
+// ── Config ───────────────────────────────────────────────────────────────────
+
+export interface ConfigEntry {
+  key: string;
+  value: string;
+  description: string | null;
+  updated_at: string | null;
+}
+
+export const fetchConfig = async (): Promise<ConfigEntry[]> => {
+  const { data } = await api.get<ConfigEntry[]>("/config");
+  return data;
+};
+
+export const updateConfig = async (key: string, value: string): Promise<ConfigEntry> => {
+  const { data } = await api.put<ConfigEntry>(`/config/${key}`, { value });
+  return data;
+};
+
+export const runEnricher = async (): Promise<{ status: string; message: string }> => {
+  const { data } = await api.post("/enricher/run");
+  return data;
 };
 
 export const publishTelegram = async (req: {
