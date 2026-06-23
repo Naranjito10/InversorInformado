@@ -199,7 +199,7 @@ class CatastroEnricher(BaseEnricher):
         )
         url = (
             f"{_INSPIRE_WFS}?service=wfs&version=2.0.0&request=getfeature"
-            f"&TYPENAME=cp:CadastralParcel&BBOX={bbox}"
+            f"&TYPENAMES=cp:CadastralParcel&BBOX={bbox}"
         )
         try:
             with httpx.Client(follow_redirects=True) as client:
