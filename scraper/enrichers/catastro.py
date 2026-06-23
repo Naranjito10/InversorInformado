@@ -5,27 +5,28 @@ Flujo actual (lo que la API OVC expone libremente):
   1. Geocodifica dirección → (lat, lon) vía Nominatim si no hay coords
   2. INSPIRE WFS bbox → nationalCadastralReference (más tolerante que RCCOOR ante coords imprecisas)
 
-Campos que escribe: referencia_catastral, latitud, longitud (si no existían).
+Campos que escribe: referencia_catastral, latitud, longitud, anyo_construccion,
+superficie_catastral, ite_obligatoria.
 
-# ── LIMITACIÓN CONOCIDA ────────────────────────────────────────────────────────
-# anyo_construccion y superficie_catastral NO están disponibles vía API libre:
-# el OVC protege esos datos para inmuebles residenciales por privacidad.
-# La única fuente es la Sede Electrónica (HTML scraping):
-#   https://www1.sedecatastro.gob.es/CYCBienInmueble/OVCListaBienes.aspx?rc1={pc1}&rc2={pc2}
-# Devuelve año de construcción y superficie por unidad visual en HTML.
-# TODO: implementar _scrape_building_year(pc1, pc2) con BeautifulSoup.
-# ──────────────────────────────────────────────────────────────────────────────
+Flujo completo:
+  1. Geocodifica dirección → (lat, lon) vía Nominatim si no hay coords
+  2. INSPIRE WFS bbox → referencia_catastral (PC1+PC2)
+  3. HTML scraping Sede Electrónica → anyo_construccion y superficie_catastral
+     URL: https://www1.sedecatastro.gob.es/CYCBienInmueble/OVCListaBienes.aspx?rc1=&rc2=
+     Nota: la API OVC NO expone año/superficie para viviendas residenciales (privacidad).
 
 Circuit breaker: tras _OVC_DOWN_AFTER_FAILURES consecutivos, no se intenta más
 hasta que pasen _OVC_DOWN_BACKOFF_HOURS. Se resetea al reiniciar el servidor.
 """
 from __future__ import annotations
 import logging
+import re
 import time
 import xml.etree.ElementTree as ET
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 
 import httpx
+from bs4 import BeautifulSoup
 
 from scraper.infrastructure import db
 from .base import BaseEnricher
@@ -37,6 +38,9 @@ _OVC_BASE = "http://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC"
 # INSPIRE WFS: bbox → nationalCadastralReference (reemplaza RCCOOR — tolerante ante coords imprecisas)
 _INSPIRE_WFS = "http://ovc.catastro.meh.es/INSPIRE/wfsCP.aspx"
 _WFS_BBOX_DELTA = 0.0002  # ~22 metros en cada dirección
+# Sede Electrónica: HTML scraping → año construcción y superficie
+_SEDE_URL = "https://www1.sedecatastro.gob.es/CYCBienInmueble/OVCListaBienes.aspx"
+_SEDE_RETRY_DAYS = 30
 # Municipio texto → códigos numéricos Catastro (distintos de los INE) — reservado para futura extensión
 _OVC_MUNICIPIO = f"{_OVC_BASE}/OVCCallejeroCodigos.asmx/ConsultaMunicipioCodigos"
 # DNPRC: RC + códigos Catastro → dirección/año/superficie — reservado para futura extensión
@@ -98,17 +102,30 @@ class CatastroEnricher(BaseEnricher):
     name = "catastro"
 
     def needs_enrichment(self, listing_row: dict) -> bool:
-        # RC es el único campo que podemos obtener de la API OVC actualmente
-        if listing_row.get("referencia_catastral"):
-            return False
+        meta = listing_row.get("enrichment_meta") or {}
+        has_rc = bool(listing_row.get("referencia_catastral"))
+        has_anyo = listing_row.get("anyo_construccion") is not None
 
+        if has_rc and has_anyo:
+            return False  # completamente enriquecido
+
+        if has_rc:
+            # Tiene RC pero falta año — intentar scraping Sede Electrónica
+            failed_at_str = meta.get("catastro_sede_failed_at")
+            if failed_at_str:
+                try:
+                    failed_at = datetime.fromisoformat(failed_at_str)
+                    if (datetime.now(timezone.utc) - failed_at).days < _SEDE_RETRY_DAYS:
+                        return False
+                except (ValueError, TypeError):
+                    pass
+            return True
+
+        # Sin RC: necesita geocodificación + WFS
         if _ovc_is_down():
             return False
-
         if not listing_row.get("municipio"):
             return False
-
-        meta = listing_row.get("enrichment_meta") or {}
         for key in ("catastro_geocode_failed_at", "catastro_wfs_failed_at"):
             failed_at_str = meta.get(key)
             if failed_at_str:
@@ -118,42 +135,114 @@ class CatastroEnricher(BaseEnricher):
                         return False
                 except (ValueError, TypeError):
                     pass
-
         return True
 
     def enrich(self, listing_row: dict) -> dict:
         results: dict = {}
         listing_id = listing_row.get("id")
 
-        lat = listing_row.get("latitud") or listing_row.get("lat")
-        lon = listing_row.get("longitud") or listing_row.get("lon")
+        rc = listing_row.get("referencia_catastral")
 
-        if not (lat and lon):
-            titulo = listing_row.get("titulo") or ""
-            municipio = listing_row.get("municipio", "")
-            coords = geocode(titulo, municipio)
-            if coords is None:
-                log.warning("catastro_geocode_failed", extra={"id": listing_id})
-                db.merge_enrichment_meta(listing_id, {
-                    "catastro_geocode_failed_at": datetime.now(timezone.utc).isoformat()
-                })
-                return {}
-            lat, lon = coords
-            time.sleep(_RATE_SLEEP)
+        if not rc:
+            # Paso 1: obtener coordenadas
+            lat = listing_row.get("latitud") or listing_row.get("lat")
+            lon = listing_row.get("longitud") or listing_row.get("lon")
+            if not (lat and lon):
+                titulo = listing_row.get("titulo") or ""
+                municipio = listing_row.get("municipio", "")
+                coords = geocode(titulo, municipio)
+                if coords is None:
+                    log.warning("catastro_geocode_failed", extra={"id": listing_id})
+                    db.merge_enrichment_meta(listing_id, {
+                        "catastro_geocode_failed_at": datetime.now(timezone.utc).isoformat()
+                    })
+                    return {}
+                lat, lon = coords
+                time.sleep(_RATE_SLEEP)
 
-        if not listing_row.get("latitud"):
-            results["latitud"] = lat
-            results["longitud"] = lon
+            if not listing_row.get("latitud"):
+                results["latitud"] = lat
+                results["longitud"] = lon
 
-        rc = self._get_rc_by_coords(lat, lon)
-        if rc:
-            results["referencia_catastral"] = rc
-        elif listing_id:
-            db.merge_enrichment_meta(listing_id, {
-                "catastro_wfs_failed_at": datetime.now(timezone.utc).isoformat()
-            })
+            # Paso 2: INSPIRE WFS → RC
+            rc = self._get_rc_by_coords(lat, lon)
+            if rc:
+                results["referencia_catastral"] = rc
+            else:
+                if listing_id:
+                    db.merge_enrichment_meta(listing_id, {
+                        "catastro_wfs_failed_at": datetime.now(timezone.utc).isoformat()
+                    })
+                return results
+
+        # Paso 3: Sede Electrónica → año construcción y superficie
+        if listing_row.get("anyo_construccion") is None:
+            sede_data = self._scrape_building_year(rc, listing_id)
+            if sede_data:
+                anyo = sede_data.get("anyo_construccion")
+                if anyo:
+                    results["anyo_construccion"] = anyo
+                    results["ite_obligatoria"] = (date.today().year - anyo) >= 50
+                if sede_data.get("superficie_catastral"):
+                    results["superficie_catastral"] = sede_data["superficie_catastral"]
 
         return results
+
+    def _scrape_building_year(self, rc: str, listing_id: str | None = None) -> dict | None:
+        """
+        HTML scraping de Sede Electrónica → año construcción y superficie.
+        Los datos de año/superficie para viviendas NO están en la API OVC por privacidad.
+        """
+        pc1, pc2 = rc[:7], rc[7:14] if len(rc) >= 14 else rc[7:]
+        url = f"{_SEDE_URL}?rc1={pc1}&rc2={pc2}"
+        try:
+            with httpx.Client(follow_redirects=True) as client:
+                resp = client.get(url, headers=_HEADERS_GET, timeout=20)
+            resp.raise_for_status()
+
+            soup = BeautifulSoup(resp.text, "lxml")
+            text = soup.get_text(separator=" ", strip=True)
+
+            details: dict = {}
+
+            # Año de construcción — múltiples formatos posibles en la página
+            for pattern in (
+                r"[Aa]ño\s+(?:de\s+)?[Cc]onstrucci[oó]n\D{0,10}(\d{4})",
+                r"[Aa]ntig[üu]edad\D{0,10}(\d{4})",
+                r"[Cc]onstrucci[oó]n\D{0,10}(\d{4})",
+            ):
+                m = re.search(pattern, text)
+                if m:
+                    anyo = int(m.group(1))
+                    if 1850 <= anyo <= date.today().year:
+                        details["anyo_construccion"] = anyo
+                    break
+
+            # Superficie construida
+            m = re.search(r"[Ss]uperficie\s+(?:construida|total)\D{0,15}(\d+)\s*m", text)
+            if m:
+                try:
+                    details["superficie_catastral"] = int(m.group(1))
+                except ValueError:
+                    pass
+
+            if details:
+                log.info("catastro_sede_scraped", extra={"rc": rc, **details})
+            else:
+                log.warning("catastro_sede_no_data", extra={"rc": rc, "sample": text[:400]})
+                if listing_id:
+                    db.merge_enrichment_meta(listing_id, {
+                        "catastro_sede_failed_at": datetime.now(timezone.utc).isoformat()
+                    })
+
+            return details or None
+        except Exception as exc:  # noqa: BLE001
+            log.error("catastro_sede_failed", extra={"rc": rc, "error": str(exc)})
+            if listing_id:
+                db.merge_enrichment_meta(listing_id, {
+                    "catastro_sede_failed_at": datetime.now(timezone.utc).isoformat()
+                })
+            return None
 
     # ── Métodos reservados para futura extensión ─────────────────────────────
     # Cuando se implemente el HTML scraper de Sede Electrónica para anyo_construccion,

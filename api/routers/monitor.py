@@ -28,12 +28,11 @@ def test_catastro_dnprc(rc: str = "9319414DF2891G"):
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Accept-Language": "es-ES,es;q=0.9",
     }
-    base_cod = "http://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC/OVCCallejeroCodigos.asmx"
+    pc1 = rc[:7]
+    pc2 = rc[7:14] if len(rc) >= 14 else rc[7:]
     candidates = [
-        # Paso 1: lookup municipio → códigos Catastro (distintos de INE; Barcelona = 900 no 019)
-        ("municipio_lookup", "GET", f"{base_cod}/ConsultaMunicipioCodigos?CodigoProvincia=&CodigoMunicipio=&CodigoMunicipioINE=&Municipio=BARCELONA", None, headers_get),
-        # Paso 2: DNPRC con códigos correctos confirmados por la otra IA (cpro=8, cmun=900)
-        ("dnprc_codigos_900", "GET", f"{base_cod}/Consulta_DNPRC_Codigos?CodigoProvincia=8&CodigoMunicipio=900&CodigoMunicipioINE=&RC={rc}", None, headers_get),
+        # Sede Electrónica — HTML scraping para año construcción y superficie
+        ("sede_html", "GET", f"https://www1.sedecatastro.gob.es/CYCBienInmueble/OVCListaBienes.aspx?rc1={pc1}&rc2={pc2}", None, headers_get),
     ]
 
     results = []
