@@ -54,12 +54,14 @@ def test_catastro_dnprc(rc: str = "9319414DF2891G"):
     }
     wcf_base = "http://ovc.catastro.meh.es/OVCServWeb/OVCWcfLibres/RESTServiceLibres.svc"
 
+    base_cod = "http://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC/OVCCallejeroCodigos.asmx"
     candidates = [
-        # Web pública del Catastro — devuelve HTML con año de construcción
-        ("web_refcat", "GET", f"https://www1.sedecatastro.gob.es/CatastroDnprc/OVCCallejeroRC.aspx?refcat={rc}", None, headers_get),
-        ("web_RC", "GET", f"https://www1.sedecatastro.gob.es/CatastroDnprc/OVCCallejeroRC.aspx?RC={rc}", None, headers_get),
-        # RCCOOR completo — ver todos los campos que devuelve
-        ("rccoor_full", "GET", "http://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC/OVCCoordenadas.asmx/Consulta_RCCOOR?SRS=EPSG:4326&Coordenada_X=2.15366&Coordenada_Y=41.38437", None, headers_get),
+        # Solo RC, sin provincia/municipio
+        ("dnprc_solo_rc", "GET", f"{base_cod}/Consulta_DNPRC_Codigos?Provincia=&Municipio=&Sigla=&Via=&Num=&Blq=&Esc=&Plt=&Prt=&RC.PC1={pc1}&RC.PC2={pc2}&RC.Car=&RC.CC1=&RC.CC2=", None, headers_get),
+        # Consulta del municipio para obtener el código correcto
+        ("municipio_lookup", "GET", f"{base_cod}/Consulta_Municipio?Provincia=BARCELONA&Municipio=BARCELONA", None, headers_get),
+        # Ver qué métodos expone este ASMX
+        ("asmx_root", "GET", base_cod, None, headers_get),
     ]
 
     results = []
