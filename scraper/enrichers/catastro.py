@@ -205,7 +205,7 @@ class CatastroEnricher(BaseEnricher):
 
             details: dict = {}
 
-            # Año de construcción — múltiples formatos posibles en la página
+            # Formato A: página de bien inmueble individual — "Año de construcción: YYYY"
             for pattern in (
                 r"[Aa]ño\s+(?:de\s+)?[Cc]onstrucci[oó]n\D{0,10}(\d{4})",
                 r"[Aa]ntig[üu]edad\D{0,10}(\d{4})",
@@ -218,7 +218,16 @@ class CatastroEnricher(BaseEnricher):
                         details["anyo_construccion"] = anyo
                     break
 
-            # Superficie construida
+            # Formato B: lista de inmuebles — "Residencial | 132 m 2 | 8,14% | 1929"
+            # El año es el último campo tras el pipe; range 1[89]xx o 20xx descarta superficies
+            if "anyo_construccion" not in details:
+                m = re.search(r"\|\s*(1[89]\d{2}|20[012]\d)\b", text)
+                if m:
+                    anyo = int(m.group(1))
+                    if 1850 <= anyo <= date.today().year:
+                        details["anyo_construccion"] = anyo
+
+            # Superficie construida — solo en formato A (en formato B es por unidad, no total)
             m = re.search(r"[Ss]uperficie\s+(?:construida|total)\D{0,15}(\d+)\s*m", text)
             if m:
                 try:
