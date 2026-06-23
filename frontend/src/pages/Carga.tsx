@@ -252,6 +252,20 @@ function ManualForm() {
         ))}
       </div>
 
+      {/* Referencia catastral */}
+      <div className="flex flex-col gap-1.5">
+        <label className="text-sm font-medium text-gray-700">
+          Referencia catastral{" "}
+          <span className="text-xs text-gray-400 font-normal">(opcional — si la conoces, el enriquecedor la usará directamente)</span>
+        </label>
+        <input
+          placeholder="ej: 9872023VH5797S0001WX"
+          value={form.referencia_catastral ?? ""}
+          onChange={(e) => set("referencia_catastral", e.target.value || undefined)}
+          className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+
       {/* Clasificación */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="flex flex-col gap-1.5">

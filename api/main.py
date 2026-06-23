@@ -12,7 +12,7 @@ from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.auth import get_current_user
-from api.routers import listings, scraper, export, zones, monitor, auth, fuentes, telegram, reports
+from api.routers import listings, scraper, export, zones, monitor, auth, fuentes, telegram, reports, config, enricher
 
 
 @asynccontextmanager
@@ -47,6 +47,8 @@ app.include_router(monitor.router, **_protected)
 app.include_router(fuentes.router, **_protected)
 app.include_router(telegram.router, **_protected)
 app.include_router(reports.router, **_protected)
+app.include_router(config.router, **_protected)
+app.include_router(enricher.router, **_protected)
 
 
 @app.get("/health")

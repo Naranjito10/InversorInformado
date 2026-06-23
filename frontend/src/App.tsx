@@ -11,6 +11,7 @@ import Informes from "./pages/Informes";
 import InformeNuevo from "./pages/InformeNuevo";
 import InformeDetalle from "./pages/InformeDetalle";
 import Comunicaciones from "./pages/Comunicaciones";
+import Configuracion from "./pages/Configuracion";
 import Login from "./pages/Login";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { fetchPendingReview, logout } from "./services/api";
@@ -171,6 +172,14 @@ function AppLayout() {
         >
           Comunicaciones
         </NavLink>
+        <NavLink
+          to="/configuracion"
+          className={({ isActive }) =>
+            isActive ? "text-blue-600 font-medium" : "text-gray-500 hover:text-gray-800"
+          }
+        >
+          Configuración
+        </NavLink>
 
         <button
           onClick={logout}
@@ -192,6 +201,7 @@ function AppLayout() {
           <Route path="/informes/nuevo" element={<InformeNuevo />} />
           <Route path="/informes/:id" element={<InformeDetalle />} />
           <Route path="/comunicaciones" element={<Comunicaciones />} />
+          <Route path="/configuracion" element={<Configuracion />} />
         </Routes>
       </main>
     </div>

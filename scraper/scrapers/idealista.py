@@ -85,6 +85,16 @@ class IdealistaScraper(BaseScraper):
                     item["municipio"] = page_municipio
                     item["barrio"] = page_barrio
 
+                # Fotos — thumbnails de la card (data-src tiene prioridad sobre src en lazy-load)
+                foto_urls: list[str] = []
+                for img in art.select("img"):
+                    src = img.get("data-src") or img.get("src") or ""
+                    if src and not src.startswith("data:") and any(
+                        ext in src.lower() for ext in (".jpg", ".jpeg", ".png", ".webp")
+                    ):
+                        foto_urls.append(src)
+                item["foto_urls"] = foto_urls[:10]
+
                 yield item
             except Exception as exc:  # noqa: BLE001
                 self.log.warning("item_parse_error", extra={"error": str(exc)})

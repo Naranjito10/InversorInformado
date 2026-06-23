@@ -56,6 +56,15 @@ export interface Listing {
   // Garaje
   garaje_incluido?: boolean;
   num_plazas_garaje?: number;
+  // Fotos del anuncio (URLs del portal; storage propio en enrichment_meta.fotos.urls)
+  foto_urls?: string[];
+  // Catastro (enriquecido)
+  latitud?: number;
+  longitud?: number;
+  referencia_catastral?: string;
+  anyo_construccion?: number;
+  superficie_catastral?: number;
+  ite_obligatoria?: boolean;
 }
 
 export interface Stats {
