@@ -148,7 +148,11 @@ def _fetch_js(url: str, proxy: Optional[str], timeout: int) -> str:
             page = session.fetch(url, **kwargs)
             if page is None:
                 raise FetchError(f"StealthySession devolvio respuesta vacia: {url}")
-            return page.html_content
+            html = page.html_content
+            if _is_blocked(html):
+                log.warning("js_block_detected", extra={"url": url, "snippet": html[:200]})
+                raise FetchError(f"Portal bloqueado (bot-detection) [{url}]")
+            return html
         except FetchError:
             raise
         except Exception as exc:
@@ -231,7 +235,8 @@ def _is_blocked(html: str) -> bool:
         or "validate your request" in lower  # DataDome message
         or "acceso restringido" in lower
         or "verificar que no eres un robot" in lower
-        or "pardon our interruption" in lower  # Imperva/Incapsula
+        or "pardon our interruption" in lower  # Imperva/Incapsula (EN)
+        or "sentimos la interrupci" in lower   # Imperva/Incapsula (ES)
         or ("sorry, you have been blocked" in lower and len(html) < 15_000)
         or ("access denied" in lower and len(html) < 10_000)
         or "robot_check" in lower
