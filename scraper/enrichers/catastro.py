@@ -222,8 +222,15 @@ class CatastroEnricher(BaseEnricher):
         pc2 = rc[7:14] if len(rc) >= 14 else ""
         url = f"{_OVC_DNPRC}?Provincia=&Municipio=&RC.PC1={pc1}&RC.PC2={pc2}&RC.Car=&RC.CC1=&RC.CC2="
         try:
-            with httpx.Client(follow_redirects=True) as client:
+            with httpx.Client(follow_redirects=False) as client:
                 resp = client.get(url, headers=_HEADERS_GET, timeout=_TIMEOUT)
+            log.info("catastro_dnprc_raw", extra={
+                "rc": rc,
+                "status": resp.status_code,
+                "location": resp.headers.get("location", ""),
+                "content_type": resp.headers.get("content-type", ""),
+                "body": resp.text[:300],
+            })
             resp.raise_for_status()
 
             if "<html" in resp.text[:200].lower():
