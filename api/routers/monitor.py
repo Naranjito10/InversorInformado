@@ -21,47 +21,19 @@ def test_portal(portal: str):
 
 @router.get("/test-catastro-dnprc")
 def test_catastro_dnprc(rc: str = "9319414DF2891G"):
-    """Prueba múltiples URLs del OVC DNPRC para encontrar cuál funciona."""
-    pc1 = rc[:7]
-    pc2 = rc[7:14] if len(rc) >= 14 else ""
+    """Prueba la URL confirmada de DNPRC y el XML completo de RCCOOR."""
     ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/125.0.0.0 Safari/537.36"
     headers_get = {
         "User-Agent": ua,
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Accept-Language": "es-ES,es;q=0.9",
     }
-    soap_body = (
-        '<?xml version="1.0" encoding="utf-8"?>'
-        '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">'
-        "<soap:Body>"
-        '<Consulta_DNPRC xmlns="http://www.catastro.meh.es/">'
-        "<Provincia></Provincia><Municipio></Municipio>"
-        f"<RC><PC1>{pc1}</PC1><PC2>{pc2}</PC2><Car></Car><CC1></CC1><CC2></CC2></RC>"
-        "</Consulta_DNPRC>"
-        "</soap:Body>"
-        "</soap:Envelope>"
-    )
-    headers_soap = {
-        "Content-Type": "text/xml; charset=utf-8",
-        "SOAPAction": "http://www.catastro.meh.es/Consulta_DNPRC",
-        "User-Agent": ua,
-    }
-
-    headers_xml = {
-        "User-Agent": ua,
-        "Accept": "text/xml, application/xml",
-        "Accept-Language": "es-ES,es;q=0.9",
-    }
-    wcf_base = "http://ovc.catastro.meh.es/OVCServWeb/OVCWcfLibres/RESTServiceLibres.svc"
-
     base_cod = "http://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC/OVCCallejeroCodigos.asmx"
     candidates = [
-        # Solo RC, sin provincia/municipio
-        ("dnprc_solo_rc", "GET", f"{base_cod}/Consulta_DNPRC_Codigos?Provincia=&Municipio=&Sigla=&Via=&Num=&Blq=&Esc=&Plt=&Prt=&RC.PC1={pc1}&RC.PC2={pc2}&RC.Car=&RC.CC1=&RC.CC2=", None, headers_get),
-        # Consulta del municipio para obtener el código correcto
-        ("municipio_lookup", "GET", f"{base_cod}/Consulta_Municipio?Provincia=BARCELONA&Municipio=BARCELONA", None, headers_get),
-        # Ver qué métodos expone este ASMX
-        ("asmx_root", "GET", base_cod, None, headers_get),
+        # Paso 1: lookup municipio → códigos Catastro (distintos de INE; Barcelona = 900 no 019)
+        ("municipio_lookup", "GET", f"{base_cod}/ConsultaMunicipioCodigos?CodigoProvincia=&CodigoMunicipio=&CodigoMunicipioINE=&Municipio=BARCELONA", None, headers_get),
+        # Paso 2: DNPRC con códigos correctos confirmados por la otra IA (cpro=8, cmun=900)
+        ("dnprc_codigos_900", "GET", f"{base_cod}/Consulta_DNPRC_Codigos?CodigoProvincia=8&CodigoMunicipio=900&CodigoMunicipioINE=&RC={rc}", None, headers_get),
     ]
 
     results = []
@@ -78,7 +50,7 @@ def test_catastro_dnprc(rc: str = "9319414DF2891G"):
                     "status": resp.status_code,
                     "location": resp.headers.get("location", ""),
                     "content_type": resp.headers.get("content-type", ""),
-                    "body": resp.text[:200],
+                    "body": resp.text[:600],
                 })
             except Exception as exc:
                 results.append({"test": name, "url": url, "error": str(exc)})
