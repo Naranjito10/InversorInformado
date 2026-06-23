@@ -73,6 +73,8 @@ class BaseScraper(ABC):
             self.log.info(
                 "page_parsed", extra={"url": url, "page": page, "items": len(raw_items)},
             )
+            if page == 1 and len(raw_items) == 0:
+                self.log.warning("page1_empty_html_snippet", extra={"url": url, "html": html[:600]})
 
             for raw in raw_items:
                 if len(result.listings) >= max_results:
