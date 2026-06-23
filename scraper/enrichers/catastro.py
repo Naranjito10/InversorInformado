@@ -3,7 +3,7 @@ CatastroEnricher — enriquece listings con datos del Catastro Español (OVC RES
 
 Flujo actual (lo que la API OVC expone libremente):
   1. Geocodifica dirección → (lat, lon) vía Nominatim si no hay coords
-  2. Consulta_RCCOOR GET → obtiene referencia catastral (PC1+PC2)
+  2. INSPIRE WFS bbox → nationalCadastralReference (más tolerante que RCCOOR ante coords imprecisas)
 
 Campos que escribe: referencia_catastral, latitud, longitud (si no existían).
 
@@ -34,11 +34,12 @@ from .geocoder import geocode
 log = logging.getLogger(__name__)
 
 _OVC_BASE = "http://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC"
-# RCCOOR: coordenadas → referencia catastral
-_OVC_RCCOOR = f"{_OVC_BASE}/OVCCoordenadas.asmx/Consulta_RCCOOR"
-# Municipio texto → códigos numéricos Catastro (distintos de los INE)
+# INSPIRE WFS: bbox → nationalCadastralReference (reemplaza RCCOOR — tolerante ante coords imprecisas)
+_INSPIRE_WFS = "http://ovc.catastro.meh.es/INSPIRE/wfsCP.aspx"
+_WFS_BBOX_DELTA = 0.0002  # ~22 metros en cada dirección
+# Municipio texto → códigos numéricos Catastro (distintos de los INE) — reservado para futura extensión
 _OVC_MUNICIPIO = f"{_OVC_BASE}/OVCCallejeroCodigos.asmx/ConsultaMunicipioCodigos"
-# DNPRC: RC + códigos Catastro → año construcción y superficie
+# DNPRC: RC + códigos Catastro → dirección/año/superficie — reservado para futura extensión
 _OVC_DNPRC = f"{_OVC_BASE}/OVCCallejeroCodigos.asmx/Consulta_DNPRC_Codigos"
 
 # Caché en memoria: "BARCELONA" → ("8", "900")
@@ -108,14 +109,15 @@ class CatastroEnricher(BaseEnricher):
             return False
 
         meta = listing_row.get("enrichment_meta") or {}
-        failed_at_str = meta.get("catastro_geocode_failed_at")
-        if failed_at_str:
-            try:
-                failed_at = datetime.fromisoformat(failed_at_str)
-                if (datetime.now(timezone.utc) - failed_at).days < _GEOCODE_RETRY_DAYS:
-                    return False
-            except (ValueError, TypeError):
-                pass
+        for key in ("catastro_geocode_failed_at", "catastro_wfs_failed_at"):
+            failed_at_str = meta.get(key)
+            if failed_at_str:
+                try:
+                    failed_at = datetime.fromisoformat(failed_at_str)
+                    if (datetime.now(timezone.utc) - failed_at).days < _GEOCODE_RETRY_DAYS:
+                        return False
+                except (ValueError, TypeError):
+                    pass
 
         return True
 
@@ -146,6 +148,10 @@ class CatastroEnricher(BaseEnricher):
         rc = self._get_rc_by_coords(lat, lon)
         if rc:
             results["referencia_catastral"] = rc
+        elif listing_id:
+            db.merge_enrichment_meta(listing_id, {
+                "catastro_wfs_failed_at": datetime.now(timezone.utc).isoformat()
+            })
 
         return results
 
@@ -186,36 +192,43 @@ class CatastroEnricher(BaseEnricher):
         return None
 
     def _get_rc_by_coords(self, lat: float, lon: float) -> str | None:
-        """Consulta_RCCOOR GET → RC (PC1+PC2). SRS se embebe en la URL para evitar que httpx codifique ':' → '%3A'."""
-        url = f"{_OVC_RCCOOR}?SRS=EPSG:4326&Coordenada_X={lon}&Coordenada_Y={lat}"
+        """INSPIRE WFS bbox → nationalCadastralReference. Tolera coords en calle/acera (±22m)."""
+        bbox = (
+            f"{lat - _WFS_BBOX_DELTA},{lon - _WFS_BBOX_DELTA},"
+            f"{lat + _WFS_BBOX_DELTA},{lon + _WFS_BBOX_DELTA},EPSG:4326"
+        )
+        url = (
+            f"{_INSPIRE_WFS}?service=wfs&version=2.0.0&request=getfeature"
+            f"&TYPENAME=cp:CadastralParcel&BBOX={bbox}"
+        )
         try:
             with httpx.Client(follow_redirects=True) as client:
                 resp = client.get(url, headers=_HEADERS_GET, timeout=_TIMEOUT)
             resp.raise_for_status()
 
             if "<html" in resp.text[:200].lower():
-                log.warning("catastro_rccoor_html", extra={"lat": lat, "lon": lon, "body": resp.text[:200]})
+                log.warning("catastro_wfs_html", extra={"lat": lat, "lon": lon, "body": resp.text[:200]})
                 _ovc_record_failure()
                 return None
 
             root = ET.fromstring(resp.text)
-            pc1 = _find_text(root, "pc1")
-            pc2 = _find_text(root, "pc2")
-            if pc1 and pc2:
+            rc = _find_text(root, "nationalCadastralReference")
+            if rc:
                 _ovc_record_success()
-                return f"{pc1}{pc2}"
+                log.info("catastro_wfs_rc_found", extra={"lat": lat, "lon": lon, "rc": rc.strip()})
+                return rc.strip()
 
-            log.warning("catastro_rccoor_no_pc", extra={"lat": lat, "lon": lon, "body": resp.text[:800]})
+            log.warning("catastro_wfs_no_rc", extra={"lat": lat, "lon": lon, "body": resp.text[:400]})
             return None
         except httpx.HTTPStatusError as exc:
-            log.error("catastro_rccoor_failed", extra={
+            log.error("catastro_wfs_failed", extra={
                 "lat": lat, "lon": lon,
                 "status": exc.response.status_code,
                 "body": exc.response.text[:200],
             })
             _ovc_record_failure()
         except Exception as exc:  # noqa: BLE001
-            log.error("catastro_rccoor_failed", extra={"lat": lat, "lon": lon, "error": str(exc)})
+            log.error("catastro_wfs_failed", extra={"lat": lat, "lon": lon, "error": str(exc)})
             _ovc_record_failure()
         return None
 
