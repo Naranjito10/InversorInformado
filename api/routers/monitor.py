@@ -55,13 +55,11 @@ def test_catastro_dnprc(rc: str = "9319414DF2891G"):
     wcf_base = "http://ovc.catastro.meh.es/OVCServWeb/OVCWcfLibres/RESTServiceLibres.svc"
 
     candidates = [
-        # WCF REST con Accept XML (devuelve 200 con HTML cuando Accept es text/html)
-        ("WCF_xml_Rc", "GET", f"{wcf_base}/Consulta_DNPRC_Libres_Rc?RC.PC1={pc1}&RC.PC2={pc2}&RC.Car=&RC.CC1=&RC.CC2=", None, headers_xml),
-        # Variantes de nombre de método WCF
-        ("WCF_xml_Localizacion", "GET", f"{wcf_base}/Consulta_DNPRC_Localizacion_RC?RC.PC1={pc1}&RC.PC2={pc2}&RC.Car=&RC.CC1=&RC.CC2=", None, headers_xml),
-        ("WCF_xml_simple", "GET", f"{wcf_base}/Consulta_DNPRC?RC.PC1={pc1}&RC.PC2={pc2}&RC.Car=&RC.CC1=&RC.CC2=", None, headers_xml),
-        # WCF con Accept HTML para ver si el body del 200 tiene datos
-        ("WCF_html_Rc", "GET", f"{wcf_base}/Consulta_DNPRC_Libres_Rc?RC.PC1={pc1}&RC.PC2={pc2}&RC.Car=&RC.CC1=&RC.CC2=", None, headers_get),
+        # Web pública del Catastro — devuelve HTML con año de construcción
+        ("web_refcat", "GET", f"https://www1.sedecatastro.gob.es/CatastroDnprc/OVCCallejeroRC.aspx?refcat={rc}", None, headers_get),
+        ("web_RC", "GET", f"https://www1.sedecatastro.gob.es/CatastroDnprc/OVCCallejeroRC.aspx?RC={rc}", None, headers_get),
+        # RCCOOR completo — ver todos los campos que devuelve
+        ("rccoor_full", "GET", "http://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC/OVCCoordenadas.asmx/Consulta_RCCOOR?SRS=EPSG:4326&Coordenada_X=2.15366&Coordenada_Y=41.38437", None, headers_get),
     ]
 
     results = []
