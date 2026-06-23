@@ -47,17 +47,21 @@ def test_catastro_dnprc(rc: str = "9319414DF2891G"):
         "User-Agent": ua,
     }
 
+    headers_xml = {
+        "User-Agent": ua,
+        "Accept": "text/xml, application/xml",
+        "Accept-Language": "es-ES,es;q=0.9",
+    }
+    wcf_base = "http://ovc.catastro.meh.es/OVCServWeb/OVCWcfLibres/RESTServiceLibres.svc"
+
     candidates = [
-        # WCF REST service en dominio antiguo (uppercase OVCServWeb)
-        ("WCF_REST_old", "GET", f"http://ovc.catastro.meh.es/OVCServWeb/OVCWcfLibres/RESTServiceLibres.svc/Consulta_DNPRC_Libres_Rc?RC.PC1={pc1}&RC.PC2={pc2}&RC.Car=&RC.CC1=&RC.CC2=", None, headers_get),
-        # CallejeroRC en Sede Electrónica — GET root
-        ("sede_asmx_root", "GET", "https://www1.sedecatastro.gob.es/OVCServWeb/OVCSWLocalizacionRC/OVCCallejeroRC.asmx", None, headers_get),
-        # CallejeroRC en Sede Electrónica — GET método
-        ("sede_get_method", "GET", f"https://www1.sedecatastro.gob.es/OVCServWeb/OVCSWLocalizacionRC/OVCCallejeroRC.asmx/Consulta_DNPRC?Provincia=&Municipio=&RC.PC1={pc1}&RC.PC2={pc2}&RC.Car=&RC.CC1=&RC.CC2=", None, headers_get),
-        # CallejeroRC en Sede Electrónica — SOAP POST
-        ("sede_soap_post", "POST", "https://www1.sedecatastro.gob.es/OVCServWeb/OVCSWLocalizacionRC/OVCCallejeroRC.asmx", soap_body, headers_soap),
-        # WCF REST en Sede Electrónica
-        ("sede_wcf_rest", "GET", f"https://www1.sedecatastro.gob.es/OVCServWeb/OVCWcfLibres/RESTServiceLibres.svc/Consulta_DNPRC_Libres_Rc?RC.PC1={pc1}&RC.PC2={pc2}&RC.Car=&RC.CC1=&RC.CC2=", None, headers_get),
+        # WCF REST con Accept XML (devuelve 200 con HTML cuando Accept es text/html)
+        ("WCF_xml_Rc", "GET", f"{wcf_base}/Consulta_DNPRC_Libres_Rc?RC.PC1={pc1}&RC.PC2={pc2}&RC.Car=&RC.CC1=&RC.CC2=", None, headers_xml),
+        # Variantes de nombre de método WCF
+        ("WCF_xml_Localizacion", "GET", f"{wcf_base}/Consulta_DNPRC_Localizacion_RC?RC.PC1={pc1}&RC.PC2={pc2}&RC.Car=&RC.CC1=&RC.CC2=", None, headers_xml),
+        ("WCF_xml_simple", "GET", f"{wcf_base}/Consulta_DNPRC?RC.PC1={pc1}&RC.PC2={pc2}&RC.Car=&RC.CC1=&RC.CC2=", None, headers_xml),
+        # WCF con Accept HTML para ver si el body del 200 tiene datos
+        ("WCF_html_Rc", "GET", f"{wcf_base}/Consulta_DNPRC_Libres_Rc?RC.PC1={pc1}&RC.PC2={pc2}&RC.Car=&RC.CC1=&RC.CC2=", None, headers_get),
     ]
 
     results = []
