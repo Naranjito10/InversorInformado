@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 import httpx
+from bs4 import BeautifulSoup
 from fastapi import APIRouter, Query
 
 from api.services.monitor_service import test_portal as _test_portal
@@ -43,13 +44,14 @@ def test_catastro_dnprc(rc: str = "9319414DF2891G"):
                     resp = client.post(url, content=body.encode(), headers=hdrs)
                 else:
                     resp = client.get(url, headers=hdrs)
+                soup = BeautifulSoup(resp.text, "lxml")
+                text = soup.get_text(separator=" ", strip=True)
                 results.append({
                     "test": name,
                     "url": url,
                     "status": resp.status_code,
-                    "location": resp.headers.get("location", ""),
                     "content_type": resp.headers.get("content-type", ""),
-                    "body": resp.text[:600],
+                    "text": text[:3000],
                 })
             except Exception as exc:
                 results.append({"test": name, "url": url, "error": str(exc)})
