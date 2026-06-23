@@ -192,23 +192,13 @@ class CatastroEnricher(BaseEnricher):
         return None
 
     def _get_building_details(self, rc: str) -> dict | None:
-        """Consulta_DNPRC SOAP POST (OVCCallejeroRC.asmx): RC → año construcción y superficie."""
+        """Consulta_DNPRC GET (OVCCallejeroRC.asmx): RC → año construcción y superficie."""
         pc1 = rc[:7]
         pc2 = rc[7:14] if len(rc) >= 14 else ""
-        body = (
-            '<?xml version="1.0" encoding="utf-8"?>'
-            '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">'
-            "<soap:Body>"
-            '<Consulta_DNPRC xmlns="http://www.catastro.meh.es/">'
-            "<Provincia></Provincia><Municipio></Municipio>"
-            f"<RC><PC1>{pc1}</PC1><PC2>{pc2}</PC2><Car></Car><CC1></CC1><CC2></CC2></RC>"
-            "</Consulta_DNPRC>"
-            "</soap:Body>"
-            "</soap:Envelope>"
-        )
+        url = f"{_OVC_SOAP}/Consulta_DNPRC?Provincia=&Municipio=&RC.PC1={pc1}&RC.PC2={pc2}&RC.Car=&RC.CC1=&RC.CC2="
         try:
             with httpx.Client(follow_redirects=True) as client:
-                resp = client.post(_OVC_SOAP, content=body.encode(), headers=_HEADERS_SOAP, timeout=_TIMEOUT)
+                resp = client.get(url, headers=_HEADERS_GET, timeout=_TIMEOUT)
             resp.raise_for_status()
 
             if "<html" in resp.text[:200].lower():
@@ -233,9 +223,10 @@ class CatastroEnricher(BaseEnricher):
         except httpx.HTTPStatusError as exc:
             log.error("catastro_dnprc_failed", extra={
                 "rc": rc,
+                "url": url,
                 "status": exc.response.status_code,
                 "body": exc.response.text[:200],
             })
         except Exception as exc:  # noqa: BLE001
-            log.error("catastro_dnprc_failed", extra={"rc": rc, "error": str(exc)})
+            log.error("catastro_dnprc_failed", extra={"rc": rc, "url": url, "error": str(exc)})
         return None
